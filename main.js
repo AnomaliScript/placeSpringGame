@@ -1,13 +1,13 @@
 /*
 
 @title: place
-@author: Brandon (AnomalScript)
+@author: Brandon (AnomaliScript)
 @tags: []
 @addedOn: 2024-08-10
 */
 
 // Tile Sprites
-const floor = 16;
+const floor = 15;
 const player = "p";
 const spike = "s";
 const red = "e";
@@ -24,6 +24,7 @@ var left = false;
 var right = false;
 const JUMPHEIGHT = 1.0;
 const GRAVITY = 0.25;
+let frameRate = 60;
 
 // Upside-down B)
 const gravitySwitch = "w";
@@ -204,11 +205,21 @@ the original bugfix (which was originally only in setInterval(), now it's in bot
 function jpb() {
   // Prevent the player from "jumping onto" blocks
   // No need to "scan" tiles compared to falling because velocity's max isn't lower than -1
-  const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
-  for (const sprite of oneAbove) {
-    if (sprite.type === block || sprite.type === glass) {
-      velocity = 1;
-      break;
+  if (!reverseGravity) {
+    const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
+    for (const sprite of oneAbove) {
+      if (sprite.type === block || sprite.type === glass) {
+        velocity = 1;
+        break;
+      }
+    }
+  } else {
+    const oneBelow = getTile(getFirst(player).x, getFirst(player).y + 1);
+    for (const sprite of oneBelow) {
+      if (sprite.type === block || sprite.type === glass) {
+        velocity = -1;
+        break;
+      }
     }
   }
 }
@@ -260,7 +271,7 @@ setInterval(() => {
     } else {
       /* 
       Mininum function to make sure the velocity doesn't freeze the player middair because the (playerY + velocity)
-      is greater than the floor i.e. 16
+      is greater than the floor i.e. 15
       */
       getFirst(player).y = Math.min(targetY, floor);
     }
@@ -278,17 +289,34 @@ setInterval(() => {
       }
     }
     */
-    
-    let isSolidUnderPlayer = false;
-    const oneBelow = getTile(getFirst(player).x, getFirst(player).y + 1);
-    for (const sprite of oneBelow) {
-      if (sprite.type === block || sprite.type === glass) {
-        isSolidUnderPlayer = true;
-        break;
+
+    let isSolidNearPlayer = false;
+    if (!reverseGravity) {
+      const oneBelow = getTile(getFirst(player).x, getFirst(player).y + 1);
+      for (const sprite of oneBelow) {
+        if (sprite.type === block || sprite.type === glass) {
+          isSolidNearPlayer = true;
+          break;
+        }
+      }
+    } else {
+      const oneAbove = getTile(getFirst(player).x, getFirst(player).y + 1);
+      for (const sprite of oneAbove) {
+        if (sprite.type === block || sprite.type === glass) {
+          isSolidNearPlayer = true;
+          break;
+        }
       }
     }
     //addText(`${isSolidUnderPlayer}`, { x: 8, y: 6, color: color`L` });
-    if (isSolidUnderPlayer || (getFirst(player).y == floor)) {
+    // stopper editing (not gonna use floor because the maps' "spawnPos"es need that to be constant
+    let stopper = 15;
+    if (reverseGravity) {
+      stopper = 0;
+    } else {
+      stopper = 15;
+    }
+    if (isSolidNearPlayer || (getFirst(player).y == stopper)) {
       velocity = 0; // Set velocity to zero to prevent clipping
       airborne = false; // Player can jump on platforms
     } else {
@@ -296,7 +324,8 @@ setInterval(() => {
     }
     addText(`airborne: ${airborne}`, { x: 3, y: 5, color: color`5` });
 
-    // DEATH CASES :skull:
+    // HOVER CASES
+    // DEATH CASE :skull:
     let spikes = getAll(spike);
     for (let i = 0; i < spikes.length; i++) {
       if (playerPosition.x == spikes[i].x && playerPosition.y == spikes[i].y) {
@@ -306,7 +335,7 @@ setInterval(() => {
       }
     }
   }
-}, /* frame updates after */ 60 /* milliseconds */);
+}, frameRate);
 
 // Maps/levels
 const levels = [
@@ -317,23 +346,22 @@ const levels = [
     top: "reach1",
     bottom: null,
     map: map`
-  .................
-  .................
-  .................
-  .................
-  .................
-  .................
-  .................
-  ..bb.............
-  .................
-  bb...bb..........
-  .................
-  ........gg.......
-  .................
-  bb.........gg....
-  .................
-  bb............bb.
-  .........ss......`,
+.................
+.................
+.................
+.................
+.................
+.................
+..bb.............
+.................
+bb...bb..........
+.................
+........gg.......
+.................
+bb.........gg....
+.................
+bb............bb.
+.........ss......`,
     spawnPos: { x: 5, y: floor}
   },
   {
@@ -343,7 +371,6 @@ const levels = [
     top: "reach1a",
     bottom: null,
     map: map`
-................
 ................
 ................
 ................
@@ -369,22 +396,22 @@ const levels = [
     top: "crushedHopes",
     bottom: null,
     map: map`
-....b...........
-.....b..........
-......b.........
-.......b........
-....b...b.......
-w..b...........g
-..b.......b...g.
-.....d.....b.g..
-.....bd.....b...
-......b.....g...
-..b....b....b.d.
-...b.......b..b.
-....b.....b.....
-................
-................
-................`,
+......b..........
+.......b.........
+....b...b........
+w..b...........g.
+..b.......b...g..
+.....d.....b.g...
+b....bd.....b....
+......b.....g....
+..b....b....b.d..
+...b.......b..b..
+....b.....b......
+.................
+.....b...........
+.................
+......b..........
+.................`,
     spawnPos: {x: 12, y: floor}
   }
 ]
@@ -398,23 +425,23 @@ function convertToIndex(name) {
 }
 
 function drawLevel(direction) {
+  if (direction === "none") {
+    // starting level rendering
+    setMap(levels[0].map);
+    // First player spawn, will never happen again
+    addSprite(5, floor, player);
+  }
+  const saveY = getFirst(player).y;
   if (direction === "left") {
-    const saveY = getFirst(player).y;
     currentLevel = convertToIndex(levels[currentLevel].left);
     const level = levels[currentLevel];
     setMap(level.map);
     addSprite(width() - 1, saveY, player);
   } else if (direction === "right") {
-    const saveY = getFirst(player).y;
     currentLevel = convertToIndex(levels[currentLevel].right);
     const level = levels[currentLevel];
     setMap(level.map);
     addSprite(0, saveY, player);
-  } else {
-    // starting level rendering
-    setMap(levels[0].map);
-    // First player spawn, will never happen again
-    addSprite(5, floor, player);
   }
 };
 drawLevel("none");
@@ -431,11 +458,13 @@ let game = {
 
 // Keybinds
 onInput("w", () => {
-  if (!airborne) {
-    velocity = -JUMPHEIGHT;
-    airborne = true;
+  if (!reverseGravity) {
+    if (!airborne) {
+      velocity = -JUMPHEIGHT;
+      airborne = true;
+    }
+    jpb();
   }
-  jpb();
 });
 
 onInput("a", () => {
@@ -449,6 +478,16 @@ onInput("a", () => {
   jpb();
 });
 
+onInput("s", () => {
+  if (reverseGravity) {
+    if (!airborne) {
+      velocity = JUMPHEIGHT;
+      airborne = true;
+    }
+    jpb();
+  }
+});
+
 onInput("d", () => {
   if (getFirst(player).x == 16) {
     if (levels[currentLevel].right !== null) {
@@ -460,15 +499,30 @@ onInput("d", () => {
   jpb();
 });
 
-onInput("i", () => {
-  for (const tile in tilesWith(door)) {
-    for (const sprite in tile) {
-      if (getFirst(player).x == sprite.x && getFirst(player).y == sprite.y) {
-        currentLevel += 1;
-        drawLevel(currentLevel);
-      }
+// i cases (like e in roblox, "i" in this game is the "use" key)
+// gravity switch
+function gravitySwitching() {
+  let reverses = getAll(gravitySwitch);
+  let triggeredGravity = false;
+  for (let i = 0; i < reverses.length; i++) {
+    if (getFirst(player).x == reverses[i].x && getFirst(player).y == reverses[i].y) {
+      triggeredGravity = true;
     }
   }
+  if (triggeredGravity) {
+    if (reverseGravity) {
+      reverseGravity = false;
+    } else {
+      reverseGravity = true;
+    }
+  }
+}
+
+// doors
+
+
+onInput("i", () => {
+  gravitySwitching();
   //jpb();
 });
 
