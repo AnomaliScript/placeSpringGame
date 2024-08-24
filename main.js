@@ -11,12 +11,16 @@
 const player = "p";
 const spike = "s";
 const spikeFlipped = "i";
-const red = "e";
 const block = "b";
 const glass = "g";
 const glassBroken = "r";
 const crate = "c";
 const door = "d";
+
+// Debugging Sprites
+const red = "e";
+const leftArrow = "q";
+const rightArrow = "x";
 
 // Physics Variables
 let floor = 10;
@@ -101,23 +105,6 @@ LLLLLLLLLLLLLLLL
 .......LL.......
 ................
 ................`],
-  [red, bitmap`
-3333333333333333
-3333333333333333
-3333333333333333
-3333333333333333
-3333333333333333
-3333333333333333
-3333333333333333
-3333333333333333
-3333333333333333
-3333333333333333
-3333333333333333
-3333333333333333
-3333333333333333
-3333333333333333
-3333333333333333
-3333333333333333`],
   [block, bitmap`
 0000000000000000
 0000000010000000
@@ -204,6 +191,57 @@ LLLLLLLLLLLLLLLL
 ....CCCCCCCCCCC.
 ....CCCCCCCCCCC.
 ....CCCCCCCCCCC.`],
+  [red, bitmap`
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333`],
+  [leftArrow, bitmap`
+................
+................
+..........3.....
+.....3...3......
+....3...3...3...
+...3...3...3....
+..3...3...3.....
+.3...3...3......
+..3...3...3.....
+...3...3...3....
+....3...3...3...
+.....3...3......
+..........3.....
+................
+................
+................`],
+  [rightArrow, bitmap`
+................
+...3............
+....3...3.......
+.....3...3......
+..3...3...3.....
+...3...3...3....
+....3...3...3...
+.....3...3...3..
+....3...3...3...
+...3...3...3....
+..3...3...3.....
+.....3...3......
+....3...3.......
+...3............
+................
+................`],
 )
 
 // Solids
@@ -554,6 +592,13 @@ setInterval(() => {
         getFirst(player).y = levels[currentLevel].spawnPos.y;
       }
     }
+
+    // DEBUG TEXT AND OTHER DEBUGGING THINGS
+    if (debugMode == 0) {
+      for (const tile of tilesWith(red)) {for (const sprite of tile) {if (sprite.type === red) {sprite.remove();}}}
+      for (const tile of tilesWith(leftArrow)) {for (const sprite of tile) {if (sprite.type === leftArrow) {sprite.remove();}}}
+      for (const tile of tilesWith(rightArrow)) {for (const sprite of tile) {if (sprite.type === rightArrow) {sprite.remove();}}}
+    }
     if (debugMode == 1) {
       addText("mode: physics", { x: 3, y: 15, color: color`D` });
       addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 3, y: 1, color: color`9` }); // Display the player coordinates
@@ -569,7 +614,15 @@ setInterval(() => {
       addText(`${justEntered}`, { x: 3, y: 11, color: color`8` });
     } else if (debugMode == 2) {
       addText("mode: scrolling", { x: 3, y: 15, color: color`D` });
-      addText(`${!Array.isArray(levels[currentLevel].right)}`, { x: 3, y: 1, color: color`7` });
+      addText(`linear: ${!Array.isArray(levels[currentLevel].right)}`, { x: 5, y: 3, color: color`7` });
+      addText(`linear: ${!Array.isArray(levels[currentLevel].left)}`, { x: 3, y: 1, color: color`5` });
+      addText(`save coords: ${getFirst(player).x}, ${getFirst(player).y}`, { x: 1, y: 5, color: color`L` });
+      if ('leftSplit' in levels[currentLevel]) {
+        addSprite(0, levels[currentLevel].leftSplit, leftArrow);
+      }
+      if ('rightSplit' in levels[currentLevel]) {
+        addSprite(width() - 1, levels[currentLevel].rightSplit, rightArrow);
+      }
     }
   }
 }, frameRate);
@@ -579,7 +632,7 @@ const levels = [{
     name: "origin",
     left: "plains",
     right: ["stairs", null],
-    rightSplit: 13,
+    rightSplit: 10,
     top: null,
     bottom: null,
     map: map`
@@ -642,7 +695,8 @@ bb............bb.
   },
   {
     name: "stairs",
-    left: "origin",
+    left: [null, "origin"],
+    leftSplit: 1,
     right: ["childrensGallery", "leapOfFaith"],
     rightSplit: 6,
     top: null,
@@ -756,14 +810,14 @@ function drawLevel(direction) {
       const originalHeight = (split + 1);
       currentLevel = convertToIndex(levels[currentLevel].left[0]);
       setMap(levels[currentLevel].map);
-      saveY += (height - originalHeight);
+      saveY += (height() - originalHeight);
     } else {
       if (levels[currentLevel].left[1] === null) {
         return;
       }
       currentLevel = convertToIndex(levels[currentLevel].left[0]);
       setMap(levels[currentLevel].map);
-      saveY -= split + 1;f
+      saveY -= split + 1;
     }
     resetFloor();
     if (saveY < 0 || saveY > floor) {
@@ -785,7 +839,7 @@ function drawLevel(direction) {
     const originalSaveY = saveY; // If the player is out of bounds
     const originalLevel = currentLevel; // Also if the player is out of bounds
     const split = levels[currentLevel].rightSplit;
-    if (saveY >= split) {
+    if (saveY <= split) {
       // Checking for "splits" without a second level; that's how I make adjecent levels with height offsets
       if (levels[currentLevel].right[0] === null) {
         return;
@@ -793,7 +847,7 @@ function drawLevel(direction) {
       const originalHeight = (split + 1);
       currentLevel = convertToIndex(levels[currentLevel].right[0]);
       setMap(levels[currentLevel].map);
-      saveY += (height - originalHeight);
+      saveY += (height() - originalHeight);
     } else {
       if (levels[currentLevel].right[1] === null) {
         return;
@@ -809,7 +863,7 @@ function drawLevel(direction) {
       resetFloor();
       addSprite(0, originalSaveY, player);
     }
-    addSprite(width() - 1, saveY, player);
+    addSprite(0, saveY, player);
   } else if (direction === "top") {
     currentLevel = convertToIndex(levels[currentLevel].top);
     setMap(levels[currentLevel].map);
