@@ -23,6 +23,7 @@ let left = false;
 let right = false;
 const JUMPHEIGHT = 1.0;
 const GRAVITY = 0.25;
+let readyToFall = false;
 let frameRate = 60;
 
 // Upside-Down Physics
@@ -207,21 +208,18 @@ function jpb() {
   if (!reverseGravity) {
     const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
     for (const sprite of oneAbove) {
-      if (sprite.type === block || sprite.type === glass || levels[currentLevel].top === null) {
-        if (velocity == 0 || velocity == 0.25) {
-          // Just passing in
-          break;
-        } else {
-          // Hit the block with force
+      if (sprite.type === block || sprite.type === glass) {
+        if (velocity != 0 && velocity != 0.25) {
           velocity = 1;
           flag = true;
+          break;
         }
       }
     }
   } else {
     const oneBelow = getTile(getFirst(player).x, getFirst(player).y + 1);
     for (const sprite of oneBelow) {
-      if (sprite.type === block || sprite.type === glass || levels[currentLevel].bottom === null) {
+      if (sprite.type === block || sprite.type === glass) {
         if (velocity == 0 || velocity == -0.25) {
           break;
         } else {
@@ -232,6 +230,50 @@ function jpb() {
       }
     }
   }
+}
+
+function verticalScrolling(targetYClone) {
+  const playerPosition = getFirst(player);
+  if (!reverseGravity) {
+    // Normal case
+    if (targetYClone == -1 && levels[currentLevel].top !== null) {
+      // Higher scrolling
+      drawLevel("top");
+      return floor - 1;
+    } else if (targetYClone == -1) {
+      // Hitting the ceiling
+      velocity = 1;
+    }
+    // Lower scrolling
+    if (playerPosition.y == floor && velocity >= 0 && levels[currentLevel].bottom !== null) {
+      readyToFall = true;
+    }
+    if (levels[currentLevel].bottomPlat.includes(playerPosition.x)) {
+      readyToFall = false;
+    }
+    console.log(`falling: ${readyToFall}`);
+    if (readyToFall) {
+      readyToFall = false;
+      drawLevel("bottom");
+      return 0;
+    }
+  } else {
+    // Upside-down (reversed gravity) case
+    if (targetYClone == height() && levels[currentLevel].bottom !== null) {
+      // Lower scrolling
+      drawLevel("bottom");
+      return floor;
+    } else if (targetYClone == height()) {
+      // Hitting the "ceiling"
+      velocity = -1;
+    }
+    if (playerPosition.y == 0 && velocity <= 0 && levels[currentLevel].top !== null) {
+      // Higher scrolling
+      drawLevel("top");
+      return 1;
+    }
+  }
+  return targetYClone;
 }
 
 // Game Loop
@@ -251,8 +293,8 @@ setInterval(() => {
     floor = height() - 1;
     // troubleshooting addText stuff
     clearText();
-    addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 3, y: 1, color: color`5`}); // Display the player coordinates
-    addText(`${velocity}`, { x: 3, y: 3, color: color`D` });
+    addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 3, y: 1, color: color`0`}); // Display the player coordinates
+    addText(`${velocity}`, { x: 13, y: 1, color: color`D` });
     
     // Falling
     if (!reverseGravity) {
@@ -261,12 +303,16 @@ setInterval(() => {
       velocity -= GRAVITY;
     }
 
+    // Setting player "targets" to move to next frame (doesn't actually move yet)
     const playerPosition = getFirst(player); // Get the player sprite (for reference)
     let targetY = playerPosition.y + Math.floor(velocity);
     if (reverseGravity) {
       targetY = playerPosition.y + Math.ceil(velocity);
     }
     const targetTile = getTile(playerPosition.x, playerPosition.targetY); // Get the tile "below" the player
+
+    // Vertical Scrolling! (CONTROL THE targetY AT ALL COSTS)
+    targetY = verticalScrolling(targetY);
     
     // Start of the "falling clipping player" bug fix //
     const skippedTiles = [];
@@ -304,9 +350,9 @@ setInterval(() => {
         }
       }
     }
-    addText(`${platformY}`, { x: 6, y: 9, color: color`F` });
+    addText(`${platformY}`, { x: 12, y: 5, color: color`F` });
 
-    // WHERE PLAYER MOVEMENT HAPPENS (vertically, ofc)
+    // WHERE PLAYER MOVEMENT WITH targetY HAPPENS (vertically, ofc)
     if (!reverseGravity) {
       if (platformY !== null) {
         getFirst(player).y = platformY - 1; // Adjust as needed for player size
@@ -323,10 +369,10 @@ setInterval(() => {
       }
     }
     // End of the "falling clipping player" bug fix //
-    addText(`${targetY}`, { x: 3, y: 9, color: color`H` });
+    addText(`${targetY}`, { x: 9, y: 5, color: color`H` });
     
     
-    // ACCIDENTALLY DISCOVERED HOW TO DO STICKY SURFACES (like Spider-Man)
+    // Spider-Man (sticky) Surfaces
     /*
     const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
     for (const sprite of oneAbove) {
@@ -354,31 +400,21 @@ setInterval(() => {
         }
       }
     }
-    addText(`${isSolidNearPlayer}`, { x: 3, y: 7, color: color`L` });
+    addText(`${isSolidNearPlayer}`, { x: 3, y: 5, color: color`L` });
 
     flag = false;
     jpb();
-    addText(`${flag}`, { x: 3, y: 11, color: color`3` });
+    addText(`flag: ${flag}`, { x: 3, y: 7, color: color`3` });
     
     // airborne logic
-    if (isSolidNearPlayer || (!reverseGravity && getFirst(player).y == floor) || (reverseGravity && getFirst(player).y == 0)) {
+    if (isSolidNearPlayer || (!reverseGravity && getFirst(player).y == floor && velocity >= 0 && levels[currentLevel].bottom === null) || (reverseGravity && getFirst(player).y == 0 && levels[currentLevel].top === null)) {
+      readyToFall = false;
       velocity = 0;
       airborne = false; // Player can jump on platforms
     } else {
       airborne = true;
     }
-    addText(`airborne: ${airborne}`, { x: 3, y: 5, color: color`5` });
-
-    // Vertical Scrolling!
-    if (!reverseGravity) {
-      // Normal case
-      if (targetY == -1 && levels[currentLevel].top !== null) {
-        drawLevel("top");
-      }
-    } else {
-      // Upside-down (reversed gravity) case
-      
-    }
+    addText(`airborne: ${airborne}`, { x: 3, y: 3, color: color`1` });
     
     // HOVER CASES
     // DEATH case :skull:
@@ -417,7 +453,19 @@ bb.........gg....
 .................
 bb............bb.
 .........ss......`,
-    spawnPos: { x: 5, y: floor}
+    spawnPos: { x: 5, y: floor},
+    /*
+    topPlat is all of the x-coords that the player cannot enter the "top" level in
+    It references the blocks from "top" level but the values are hard-coded and stored 
+    in the current level because sprig can't access data from other levels
+    */
+    topPlat: [],
+    /*
+    bottomPlat is all of the x-coords that the player cannot enter the "bottom" level in
+    It references the "bottom" level but the values are hard-coded and stored 
+    in the current level because sprig can't access data from other levels
+    */
+    bottomPlat: []
   },
   {
     name: "place1",
@@ -442,14 +490,16 @@ bb............bb.
 ................
 ................
 ........ssssssss`,
-    spawnPos: {x: 2, y: floor}
+    spawnPos: {x: 2, y: floor},
+    topPlat: [],
+    bottomPlat: []
   },
   {
     name: "ruins",
     left: null,
     right: "start",
-    top: "crushedHopes",
-    bottom: null,
+    top: null,
+    bottom: "belowRuins",
     map: map`
 ......b..........
 .......b.........
@@ -467,7 +517,9 @@ b....bd.....b....
 .................
 ......b..........
 .................`,
-    spawnPos: {x: 12, y: floor}
+    spawnPos: {x: 12, y: floor},
+    topPlat: [],
+    bottomPlat: [0, 1, 4, 5, 10, 11, 14, 15, 16]
   },
   {
     name: "reach1",
@@ -490,7 +542,32 @@ d.g....bbb.......
 bbbb.............
 .................
 ....bbb..........`,
-    spawnPos: {x: 5, y: 12}
+    spawnPos: {x: 5, y: 12},
+    topPlat: [],
+    bottomPlat: []
+  },
+  {
+    name: "belowRuins",
+    left: null,
+    right: null,
+    top: "ruins",
+    bottom: null,
+    map: map`
+bb..bb....bb..bbb
+.................
+...b........b....
+..............bb.
+......bbb........
+..gggb..........b
+..b.........bbb..
+...........bb....
+.........bbb.....
+........bb.......
+.................
+.................`,
+    spawnPos: {x: 10, y: 7},
+    topPlat: [],
+    bottomPlat: []
   }
 ]
 
@@ -507,7 +584,7 @@ function drawLevel(direction) {
     // starting level rendering
     setMap(levels[0].map);
     // First player spawn, will never happen again
-    addSprite(5, floor, player);
+    addSprite(8, 0, player);
   }
   const saveY = getFirst(player).y;
   const saveX = getFirst(player).x;
@@ -526,9 +603,14 @@ function drawLevel(direction) {
     currentLevel = convertToIndex(levels[currentLevel].top);
     const level = levels[currentLevel];
     setMap(level.map);
+    // The game takes these positions with a grain of salt :sad:
     addSprite(saveX, height() - 1, player);
   } else if (direction === "bottom") {
-    
+    currentLevel = convertToIndex(levels[currentLevel].bottom);
+    const level = levels[currentLevel];
+    setMap(level.map);
+    // Same for this position :verySad:
+    addSprite(saveX, 0, player);
   }
 };
 drawLevel("none");
