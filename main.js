@@ -200,7 +200,7 @@ function jpb() {
     const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
     for (const sprite of oneAbove) {
       if (sprite.type === block || sprite.type === glass) {
-        velocity = 1;
+        velocity = 0.5;
         flag = true;
         break;
       }
@@ -232,7 +232,7 @@ function verticalScrolling() {
   if (!reverseGravity) {
     // Normal case
     if (targetY == -1 && levels[currentLevel].top !== null) {
-      // Higher scrolling
+      // Active movement (jump)
       drawLevel("top");
       justEntered = true;
       // Floor update (immediate use)
@@ -247,7 +247,7 @@ function verticalScrolling() {
       justEntered = false;
       return;
     }
-    // Lower scrolling
+    // Passive movement (gravity movement and acceleration)
     if (targetY >= floor && velocity > 0 && levels[currentLevel].bottom !== null) {
       readyToFall = true;
     }
@@ -286,7 +286,7 @@ function verticalScrolling() {
   } else {
     // Upside-down (reversed gravity) case
     if (targetY == height() && levels[currentLevel].bottom !== null) {
-      // Lower scrolling (it's actually higher scrolling)
+      // Active movement (jump)
       drawLevel("bottom");
       justEntered = true;
       return 0;
@@ -299,7 +299,7 @@ function verticalScrolling() {
       justEntered = false;
       return;
     }
-    // Higher scrolling (it's actually lower scrolling)
+    // Passive movement (gravity movement and acceleration)
     if (playerPosition.y == 0 && velocity <= 0 && levels[currentLevel].top !== null) {
       readyToRise = true;
     }
@@ -308,9 +308,30 @@ function verticalScrolling() {
     }
     if (readyToRise) {
       console.log("rising!");
-      readyToRise = false;
+
+      // Carrying the velocity over
       drawLevel("top");
-      targetY = floor;
+      let offset;
+      if (targetY < 0) {
+        offset = floor + ((Math.ceil(velocity) + playerPosition.y) + 1);
+      } else {
+        offset = 0;
+      }
+      while (offset < 0) {
+        // Calculate offset
+        targetY = offset;
+        offset = floor + ((Math.ceil(velocity) + playerPosition.y) + 1);
+        // Calculate platformY (if it exists)
+        calculatePlatform(getSkippedTiles());
+        if (platformY !== null) {
+          drawLevel("top");
+          return;
+        }
+      }
+      if (offset <= 0) {
+        platformY = null;
+      }
+      targetY = floor + offset;
       return;
     }
   }
