@@ -206,32 +206,35 @@ function jpb() {
   // Prevent the player from "jumping onto" blocks
   // No need to "scan" tiles compared to falling because velocity's max isn't lower than -1
   if (!reverseGravity) {
+    // Normal case
+    if (velocity >= 0) {
+      return;
+    }
     const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
     for (const sprite of oneAbove) {
       if (sprite.type === block || sprite.type === glass) {
-        if (velocity != 0 && velocity != 0.25) {
-          velocity = 1;
-          flag = true;
-          break;
-        }
+        velocity = 1;
+        flag = true;
+        break;
       }
     }
   } else {
+    // Reversed (upside-down) case
+    if (velocity <= 0) {
+      return;
+    }
     const oneBelow = getTile(getFirst(player).x, getFirst(player).y + 1);
     for (const sprite of oneBelow) {
       if (sprite.type === block || sprite.type === glass) {
-        if (velocity == 0 || velocity == -0.25) {
-          break;
-        } else {
-          velocity = -1;
-          flag = true;
-          break;
-        }
+        velocity = -1;
+        flag = true;
+        break;
       }
     }
   }
 }
 
+// Vertical Scrolling Function
 function verticalScrolling(targetYClone) {
   const playerPosition = getFirst(player);
   if (!reverseGravity) {
@@ -276,6 +279,66 @@ function verticalScrolling(targetYClone) {
   return targetYClone;
 }
 
+// Tile scanning function
+function getSkippedTiles() {
+  const skipped = [];
+  const playerPosition = getFirst(player);
+  if (!reverseGravity) {
+    for (let i = 1; i <= Math.abs(Math.floor(velocity)); i++) {
+      const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
+      skipped.push(getTile(playerPosition.x, scanY));
+    }
+  } else {
+    for (let i = 1; i <= Math.abs(Math.ceil(velocity)); i++) {
+      const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
+      skipped.push(getTile(playerPosition.x, scanY));
+    }
+  }
+  return skipped;
+}
+
+// Calculate if there is a platform to land on
+function calculatePlatform(allTiles) {
+  let platformYCoord = null;
+  for (const tile of allTiles) {
+    for (const sprite of tile) {
+      if (sprite.type === block || sprite.type === glass) {
+        // console.log(`${sprite.x}, ${sprite.y}`);
+        platformYCoord = sprite.y;
+        // addSprite(getFirst(player).x, sprite.y, red);
+        break;
+      }
+      if (platformYCoord !== null) {
+        break; // Exit the loop if platform position is found
+      }
+    }
+  }
+  return platformYCoord;
+}
+
+// Determine if there is a block on top of the the player
+function determineIfIsSolidNearPlayer() {
+  let localIsSolidNearPlayer = false;
+  if (!reverseGravity) {
+    const oneBelow = getTile(getFirst(player).x, getFirst(player).y + 1);
+    for (const sprite of oneBelow) {
+      if (sprite.type === block || sprite.type === glass) {
+        localIsSolidNearPlayer = true;
+        break;
+      }
+    } 
+  } else {
+    const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
+    for (const sprite of oneAbove) {
+      if (sprite.type === block || sprite.type === glass) {
+        localIsSolidNearPlayer = true;
+        break;
+      }
+    }
+  }
+  return localIsSolidNearPlayer;
+}
+
 // Game Loop
 let game = {
   running: true,
@@ -315,18 +378,8 @@ setInterval(() => {
     targetY = verticalScrolling(targetY);
     
     // Start of the "falling clipping player" bug fix //
-    const skippedTiles = [];
-    if (!reverseGravity) {
-      for (let i = 1; i <= Math.abs(Math.floor(velocity)); i++) {
-        const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
-        skippedTiles.push(getTile(playerPosition.x, scanY));
-      }
-    } else {
-      for (let i = 1; i <= Math.abs(Math.ceil(velocity)); i++) {
-        const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
-        skippedTiles.push(getTile(playerPosition.x, scanY));
-      }
-    }
+    const skippedTiles = getSkippedTiles();
+    
     // Identify the platform position for the player to land on
     /* for (const tile of tilesWith(red)) {
       for (const sprite of tile) {
@@ -335,21 +388,8 @@ setInterval(() => {
         }
       }
     } */
-    let platformY = null;
-    let i = 0;
-    for (const tile of skippedTiles) {
-      for (const sprite of tile) {
-        if (sprite.type === block || sprite.type === glass) {
-          // console.log(`${sprite.x}, ${sprite.y}`);
-          platformY = sprite.y;
-          // addSprite(getFirst(player).x, sprite.y, red);
-          break;
-        }
-        if (platformY !== null) {
-          break; // Exit the loop if platform position is found
-        }
-      }
-    }
+    let platformY = calculatePlatform(skippedTiles);
+    
     addText(`${platformY}`, { x: 12, y: 5, color: color`F` });
 
     // WHERE PLAYER MOVEMENT WITH targetY HAPPENS (vertically, ofc)
@@ -382,24 +422,8 @@ setInterval(() => {
       }
     }
     */
-    let isSolidNearPlayer = false;
-    if (!reverseGravity) {
-      const oneBelow = getTile(getFirst(player).x, getFirst(player).y + 1);
-      for (const sprite of oneBelow) {
-        if (sprite.type === block || sprite.type === glass) {
-          isSolidNearPlayer = true;
-          break;
-        }
-      }
-    } else {
-      const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
-      for (const sprite of oneAbove) {
-        if (sprite.type === block || sprite.type === glass) {
-          isSolidNearPlayer = true;
-          break;
-        }
-      }
-    }
+
+    let isSolidNearPlayer = determineIfIsSolidNearPlayer();
     addText(`${isSolidNearPlayer}`, { x: 3, y: 5, color: color`L` });
 
     flag = false;
@@ -407,7 +431,8 @@ setInterval(() => {
     addText(`flag: ${flag}`, { x: 3, y: 7, color: color`3` });
     
     // airborne logic
-    if (isSolidNearPlayer || (!reverseGravity && getFirst(player).y == floor && velocity >= 0 && levels[currentLevel].bottom === null) || (reverseGravity && getFirst(player).y == 0 && levels[currentLevel].top === null)) {
+    const regularCase = !readyToFall && !reverseGravity && getFirst(player).y == floor && velocity >= 0;
+    if (isSolidNearPlayer || regularCase || (reverseGravity && getFirst(player).y == 0 && levels[currentLevel].top === null)) {
       readyToFall = false;
       velocity = 0;
       airborne = false; // Player can jump on platforms
