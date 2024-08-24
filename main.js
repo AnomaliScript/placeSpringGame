@@ -251,11 +251,10 @@ function verticalScrolling(targetYClone) {
       drawLevel("top");
       justEntered = true;
       // Floor update (immediate use)
-      floor = height() - 1;
       return floor;
     } else if (targetYClone == -1) {
       // Hitting the ceiling
-      velocity = -velocity;
+      velocity = 1;
     }
     // Guard clause to exit the function for if a player has just entered another level
     if (justEntered) {
@@ -272,8 +271,9 @@ function verticalScrolling(targetYClone) {
     if (readyToFall) {
       console.log("falling!");
       readyToFall = false;
+      // TODO?
       drawLevel("bottom");
-      return 0;
+      return 0 + Math.floor(velocity);
     }
   } else {
     // Upside-down (reversed gravity) case
@@ -405,6 +405,7 @@ setInterval(() => {
 
     // Vertical Scrolling! (CONTROL THE targetY AT ALL COSTS)
     targetY = verticalScrolling(targetY);
+    jpb();
     
     // Start of the "falling clipping player" bug fix //
     const skippedTiles = getSkippedTiles();
@@ -516,7 +517,7 @@ bb............bb.
     It references the blocks from "top" level but the values are hard-coded and stored 
     in the current level because sprig can't access data from other levels
     */
-    topPlat: [],
+    topPlat: [4, 5, 6],
     /*
     bottomPlat is all of the x-coords that the player cannot enter the "bottom" level in
     It references the "bottom" level but the values are hard-coded and stored 
@@ -643,8 +644,8 @@ function drawLevel(direction) {
     // First player spawn, will never happen again
     addSprite(8, 0, player);
   }
-  const saveY = getFirst(player).y;
   const saveX = getFirst(player).x;
+  const saveY = getFirst(player).y;
   console.log(`Saved coords: ${saveX}, ${saveY}  Direction: ${direction}`);
   if (direction === "left") {
     currentLevel = convertToIndex(levels[currentLevel].left);
@@ -660,13 +661,15 @@ function drawLevel(direction) {
     currentLevel = convertToIndex(levels[currentLevel].top);
     const level = levels[currentLevel];
     setMap(level.map);
-    // The game takes these positions with a grain of salt :sad:
-    addSprite(saveX, 0, player);
+    // Resetting the floor
+    floor = height() - 1;
+    addSprite(saveX, floor, player);
   } else if (direction === "bottom") {
     currentLevel = convertToIndex(levels[currentLevel].bottom);
     const level = levels[currentLevel];
     setMap(level.map);
-    // Same for this position :verySad:
+    // Resetting the floor
+    floor = height() - 1;
     addSprite(saveX, 0, player);
   }
 };
@@ -705,7 +708,7 @@ onInput("s", () => {
 });
 
 onInput("d", () => {
-  if (getFirst(player).x == 16) {
+  if (getFirst(player).x == width() - 1) {
     if (levels[currentLevel].right !== null) {
       drawLevel("right");
     }
@@ -723,14 +726,7 @@ onInput("i", () => {
 // i cases (like e in roblox, "i" in this game is the "use" key)
 // gravity switch
 function gravitySwitching() {
-  let reverses = getAll(gravitySwitch);
-  let triggeredGravity = false;
-  for (let i = 0; i < reverses.length; i++) {
-    if (getFirst(player).x == reverses[i].x && getFirst(player).y == reverses[i].y) {
-      triggeredGravity = true;
-    }
-  }
-  if (triggeredGravity) {
+  if (true) /*ability condition to be here soon*/ {
     if (reverseGravity) {
       reverseGravity = false;
     } else {
