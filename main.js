@@ -255,7 +255,7 @@ function verticalScrolling() {
     // Passive movement (gravity movement and acceleration)
     if (levels[currentLevel].bottomPlat.includes(playerPosition.x) || 
         targetY < floor || 
-        Math.floor(velocity) < 0 || 
+        Math.floor(velocity) <= 0 || 
         levels[currentLevel].bottom === null) {
       readyToFall = false;
       return;
@@ -304,12 +304,14 @@ function verticalScrolling() {
       return;
     }
     // Passive movement (gravity movement and acceleration)
-    if (playerPosition.y == 0 && Math.ceil(velocity) <= 0 && levels[currentLevel].top !== null) {
-      readyToRise = true;
-    }
-    if (levels[currentLevel].topPlat.includes(playerPosition.x)) {
+    if (levels[currentLevel].topPlat.includes(playerPosition.x) || 
+        targetY > 0 || 
+        Math.ceil(velocity) >= 0 || 
+        levels[currentLevel].top === null) {
       readyToRise = false;
+      return;
     }
+    readyToRise = true;
     if (readyToRise) {
       console.log("rising!");
 
@@ -463,7 +465,6 @@ setInterval(() => {
       }
     }
 
-
     // Spider-Man (sticky) Surfaces
     /*
     const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
@@ -482,7 +483,7 @@ setInterval(() => {
     // !reverseGravity = gravity case
     // !readyTo___ = checks for a level underneath and if the player is on the floor (or approaching it)
     const regularStop = !reverseGravity && !readyToFall && !justEntered && getFirst(player).y == floor;
-    const reverseStop = reverseGravity && !readyToRise && !justEntered && velocity <= 0 && getFirst(player).y == 0 && (levels[currentLevel].top === null || levels[currentLevel].topPlat.includes(playerPosition.x));
+    const reverseStop = reverseGravity && !readyToRise && !justEntered && getFirst(player).y == 0;
     if ((determineIfIsSolidNearPlayer() && !reverseGravity) || regularStop) {
       velocity = 0;
       airborne = false; // Player can jump on platforms
