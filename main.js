@@ -46,7 +46,7 @@ let breakingAbility = false;
 let framesUntilGlassDisappears = 0;
 
 // Developer Stuff
-let debugMode = false;
+let debugMode = 0;
 
 /*✧･ﾟ: *✧･ﾟ:* Textures! ✧･ﾟ: *✧･ﾟ:*/
 setLegend(
@@ -497,17 +497,6 @@ setInterval(() => {
       }
     }
 
-    // Spider-Man (sticky) Surfaces
-    /*
-    const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
-    for (const sprite of oneAbove) {
-      if (sprite.type === sticky) {
-        velocity = 0;
-        break;
-      }
-    }
-    */
-
     flag = false;
     jpb();
 
@@ -526,7 +515,7 @@ setInterval(() => {
       airborne = true;
     }
 
-    if (debugMode) {
+    if (debugMode == 1) {
       addText(`${readyToFall}`, { x: 6, y: 13, color: color`5` });
       addText(`${readyToRise}`, { x: 12, y: 13, color: color`4` });
     }
@@ -565,7 +554,8 @@ setInterval(() => {
         getFirst(player).y = levels[currentLevel].spawnPos.y;
       }
     }
-    if (debugMode) {
+    if (debugMode == 1) {
+      addText("mode: physics", { x: 3, y: 15, color: color`D` });
       addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 3, y: 1, color: color`9` }); // Display the player coordinates
       addText(`${Math.floor(velocity)}, ${Math.ceil(velocity)}`, { x: 13, y: 1, color: color`D` });
       addText(`${floor}`, { x: 15, y: 7, color: color`5` });
@@ -577,6 +567,9 @@ setInterval(() => {
       addText(`${determineIfIsSolidNearPlayer()}`, { x: 3, y: 5, color: color`C` });
       addText(`${platformY}`, { x: 12, y: 5, color: color`6` });
       addText(`${justEntered}`, { x: 3, y: 11, color: color`8` });
+    } else if (debugMode == 2) {
+      addText("mode: scrolling", { x: 3, y: 15, color: color`D` });
+      addText(`${!Array.isArray(levels[currentLevel].right)}`, { x: 3, y: 1, color: color`7` });
     }
   }
 }, frameRate);
@@ -585,7 +578,8 @@ setInterval(() => {
 const levels = [{
     name: "origin",
     left: "plains",
-    right: "stairs",
+    right: ["stairs", null],
+    rightSplit: 13,
     top: null,
     bottom: null,
     map: map`
@@ -742,8 +736,8 @@ function drawLevel(direction) {
   let saveX = getFirst(player).x;
   let saveY = getFirst(player).y;
   console.log(`Saved coords: ${saveX}, ${saveY}  Direction: ${direction}`);
-  if (direction === "left") {
-    if (!Array.isArray(levels[currentLevel].left)) {
+  if (direction === "left") { ////////////////////Left case//////////////////////////////////////////////
+    if (!Array.isArray(levels[currentLevel].left)) { // Linear/straightforward csae
       currentLevel = convertToIndex(levels[currentLevel].left);
       setMap(levels[currentLevel].map);
       // unnecessary but just in case
@@ -751,46 +745,70 @@ function drawLevel(direction) {
       addSprite(width() - 1, saveY, player);
       return;
     }
-    const orginalSaveY = saveY; // If the player is out of bounds
-    const orginalLevel = currentLevel; // Also if the player is out of bounds
+    const originalSaveY = saveY; // If the player is out of bounds
+    const originalLevel = currentLevel; // Also if the player is out of bounds
     const split = levels[currentLevel].leftSplit;
     if (saveY >= split) {
+      // Checking for "splits" without a second level; that's how I make adjecent levels with height offsets
+      if (levels[currentLevel].left[0] === null) {
+        return;
+      }
       const originalHeight = (split + 1);
       currentLevel = convertToIndex(levels[currentLevel].left[0]);
       setMap(levels[currentLevel].map);
       saveY += (height - originalHeight);
     } else {
-      saveY -= split + 1;
+      if (levels[currentLevel].left[1] === null) {
+        return;
+      }
+      currentLevel = convertToIndex(levels[currentLevel].left[0]);
+      setMap(levels[currentLevel].map);
+      saveY -= split + 1;f
     }
     resetFloor();
     if (saveY < 0 || saveY > floor) {
-      currentLevel = convertToIndex(levels[originalLevel].left[0]);
+      currentLevel = convertToIndex(levels[originalLevel]);
       setMap(levels[currentLevel].map);
       resetFloor();
-      addSprite(width() - 1, saveY, player);
+      addSprite(0, originalSaveY, player);
     }
     addSprite(width() - 1, saveY, player);
-  } else if (direction === "right") {
-    if (!Array.isArray(levels[currentLevel].right)) {
+  } else if (direction === "right") { /////////////////////////Right case//////////////////////////
+    if (!Array.isArray(levels[currentLevel].right)) { // Linear/straightforward csae
       currentLevel = convertToIndex(levels[currentLevel].right);
       setMap(levels[currentLevel].map);
       // unnecessary but just in case
       resetFloor();
-      addSprite(width() - 1, saveY, player);
+      addSprite(0, saveY, player);
       return;
     }
+    const originalSaveY = saveY; // If the player is out of bounds
+    const originalLevel = currentLevel; // Also if the player is out of bounds
     const split = levels[currentLevel].rightSplit;
     if (saveY >= split) {
-      let originalHeight = (split + 1);
+      // Checking for "splits" without a second level; that's how I make adjecent levels with height offsets
+      if (levels[currentLevel].right[0] === null) {
+        return;
+      }
+      const originalHeight = (split + 1);
       currentLevel = convertToIndex(levels[currentLevel].right[0]);
       setMap(levels[currentLevel].map);
       saveY += (height - originalHeight);
     } else {
-      currentLevel = convertToIndex(levels[currentLevel].right[1]);
+      if (levels[currentLevel].right[1] === null) {
+        return;
+      }
+      currentLevel = convertToIndex(levels[currentLevel].right[0]);
       setMap(levels[currentLevel].map);
       saveY -= split + 1;
     }
     resetFloor();
+    if (saveY < 0 || saveY > floor) {
+      currentLevel = convertToIndex(levels[originalLevel]);
+      setMap(levels[currentLevel].map);
+      resetFloor();
+      addSprite(0, originalSaveY, player);
+    }
     addSprite(width() - 1, saveY, player);
   } else if (direction === "top") {
     currentLevel = convertToIndex(levels[currentLevel].top);
@@ -864,10 +882,10 @@ onInput("k", () => {
 });
 
 onInput("l", () => {
-  if (debugMode) {
-    debugMode = false;
+  if (debugMode == 2) {
+    debugMode = 0;
   } else {
-    debugMode = true;
+    debugMode += 1;
   }
   //jpb();
 });
