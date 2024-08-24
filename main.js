@@ -18,10 +18,17 @@ const glassBroken = "r";
 const crate = "c";
 const door = "d";
 
-// Physics
-var airborne = true;
-var jumpRefresh = 0;
-const jumpHeight = 3;
+// Physics Variables
+let velocity = 0
+var canJump = true;
+const JUMPHEIGHT = 2;
+const GRAVITY = 0.1;
+setInterval(() => {
+  if (game.isRunning()) {
+    velocity += GRAVITY
+    getFirst(player).y += Math.floor(velocity)
+  }
+}, 30)
 
 // Upside-down B)
 const gravitySwitch = "w";
@@ -46,7 +53,23 @@ setLegend(
 ................
 ................
 ................`],
-  [],
+  [UDplayer, bitmap`
+................
+................
+................
+.....555555.....
+....55555555....
+...5555LLL555...
+...555L555L55...
+...5555555555...
+...5555555555...
+...5555L5L555...
+...5555555555...
+....55555555....
+.....555555.....
+................
+................
+................`],
   [spike, bitmap`
 ................
 ................
@@ -132,7 +155,23 @@ LLLLLLLLLLLLLLLL`],
 1CCC1C1CCC11CCC1
 1CCC1C1CCC1C1CC1
 1111111111111111`],
-  [gravitySwitch, ],
+  [gravitySwitch, bitmap`
+................
+....4...........
+.....444........
+......444.......
+...444.4..444...
+..4...4.....44..
+..4..4.......4..
+..4..........4..
+..4.......4..4..
+..44.....44..4..
+...44....4.44...
+....444..44.....
+......4...4444..
+................
+................
+................`],
   [door, bitmap`
 ................
 ................
@@ -156,6 +195,12 @@ LLLLLLLLLLLLLLLL`],
 // Solids
 setSolids([player, block, glass])
 
+// Pushables (not needed rn)
+setPushables({
+  [player]: []
+})
+
+// Maps/levels
 let level = 0
 const levels = [{
   map: map`
@@ -190,20 +235,19 @@ const drawLevel = (levelIndex) => {
 };
 drawLevel(currentLevel);
 
-// Pushables (not needed rn)
-setPushables({
-  [player]: []
-})
+// Game Loop
+let game = {
+  running: true,
+  isRunning() { return this.running },
+  end() {
+    this.running = false;
+    addText("The end!");
+  }
+}
 
 // Keybinds
 onInput("w", () => {
-  if (!airborne) {
-    getFirst(player).y -= jumpHeight
-    airborne = true;
-    if (jumpRefresh == 0) {
-      jumpRefresh = jumpHeight;
-    }
-  }
+  velocity = -JUMPHEIGHT;
 });
 
 onInput("a", () => {
@@ -216,14 +260,6 @@ onInput("d", () => {
 
 // AFTERINPUT RAHHHH
 afterInput(() => {
-  // Gravity (will happen every time when a new button is pressed because that's the only way time can go forward)
-  if (airborne && jumpRefresh != 0) {
-    getFirst(player).y += 1;
-    jumpRefresh -= 1;
-  }
-  if (jumpRefresh == 0) {
-    airborne = false;
-  }
   
   // Coords
   let playerPosition = getFirst(player); // Get the spike sprite
