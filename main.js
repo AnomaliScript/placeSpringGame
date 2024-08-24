@@ -251,8 +251,8 @@ setInterval(() => {
     floor = height() - 1;
     // troubleshooting addText stuff
     clearText();
-    addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 3, y: 1, color: color`5`}); // Display the player coordinates
-    addText(`${velocity}`, { x: 3, y: 3, color: color`D` });
+    addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 3, y: 1, color: color`0`}); // Display the player coordinates
+    addText(`${velocity}`, { x: 13, y: 1, color: color`D` });
     
     // Falling
     if (!reverseGravity) {
@@ -269,7 +269,7 @@ setInterval(() => {
     }
     const targetTile = getTile(playerPosition.x, playerPosition.targetY); // Get the tile "below" the player
 
-    // Vertical Scrolling!
+    // Vertical Scrolling! (CONTROL THE targetY AT ALL COSTS)
     if (!reverseGravity) {
       // Normal case
       if (targetY == -1 && levels[currentLevel].top !== null) {
@@ -279,9 +279,19 @@ setInterval(() => {
       } else if (playerPosition.y == floor && velocity >= 0 && levels[currentLevel].bottom !== null) {
         // Lower scrolling
         drawLevel("bottom");
+        targetY = 0;
       }
     } else {
       // Upside-down (reversed gravity) case
+      if (targetY == height() && levels[currentLevel].bottom !== null) {
+        // Lower scrolling
+        drawLevel("bottom");
+        targetY = floor;
+      } else if (playerPosition.y == 0 && velocity <= 0 && levels[currentLevel].top !== null) {
+        // Higher scrolling
+        drawLevel("top");
+        targetY = 1;
+      }
     }
     
     // Start of the "falling clipping player" bug fix //
@@ -320,9 +330,9 @@ setInterval(() => {
         }
       }
     }
-    addText(`${platformY}`, { x: 6, y: 9, color: color`F` });
+    addText(`${platformY}`, { x: 12, y: 5, color: color`F` });
 
-    // WHERE PLAYER MOVEMENT HAPPENS (vertically, ofc)
+    // WHERE PLAYER MOVEMENT WITH targetY HAPPENS (vertically, ofc)
     if (!reverseGravity) {
       if (platformY !== null) {
         getFirst(player).y = platformY - 1; // Adjust as needed for player size
@@ -339,7 +349,7 @@ setInterval(() => {
       }
     }
     // End of the "falling clipping player" bug fix //
-    addText(`${targetY}`, { x: 3, y: 9, color: color`H` });
+    addText(`${targetY}`, { x: 9, y: 5, color: color`H` });
     
     
     // Spider-Man (sticky) Surfaces
@@ -370,22 +380,20 @@ setInterval(() => {
         }
       }
     }
-    addText(`${isSolidNearPlayer}`, { x: 3, y: 7, color: color`L` });
+    addText(`${isSolidNearPlayer}`, { x: 3, y: 5, color: color`L` });
 
     flag = false;
     jpb();
-    addText(`${flag}`, { x: 3, y: 11, color: color`3` });
+    addText(`flag: ${flag}`, { x: 3, y: 7, color: color`3` });
     
     // airborne logic
-    let transitionCondition = isSolidNearPlayer || (!reverseGravity && getFirst(player).y == floor && velocity >= 0 && levels[currentLevel].bottom === null) || (reverseGravity && getFirst(player).y == 0 && levels[currentLevel].top === null);
-    addText(`:: ${transitionCondition}`, { x: 7, y: 3, color: color`5` });
     if (isSolidNearPlayer || (!reverseGravity && getFirst(player).y == floor && velocity >= 0 && levels[currentLevel].bottom === null) || (reverseGravity && getFirst(player).y == 0 && levels[currentLevel].top === null)) {
       velocity = 0;
       airborne = false; // Player can jump on platforms
     } else {
       airborne = true;
     }
-    addText(`airborne: ${airborne}`, { x: 3, y: 5, color: color`5` });
+    addText(`airborne: ${airborne}`, { x: 3, y: 3, color: color`1` });
     
     // HOVER CASES
     // DEATH case :skull:
@@ -455,7 +463,7 @@ bb............bb.
     name: "ruins",
     left: null,
     right: "start",
-    top: "crushedHopes",
+    top: null,
     bottom: null,
     map: map`
 ......b..........
@@ -533,11 +541,13 @@ function drawLevel(direction) {
     currentLevel = convertToIndex(levels[currentLevel].top);
     const level = levels[currentLevel];
     setMap(level.map);
+    // The game takes these positions with a grain of salt :sad:
     addSprite(saveX, height() - 1, player);
   } else if (direction === "bottom") {
     currentLevel = convertToIndex(levels[currentLevel].bottom);
     const level = levels[currentLevel];
     setMap(level.map);
+    // Same for this position :verySad:
     addSprite(saveX, 0, player);
   }
 };
