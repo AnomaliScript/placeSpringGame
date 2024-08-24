@@ -261,17 +261,25 @@ function verticalScrolling() {
       // Carrying the velocity over
       let offset;
       if (targetY >= height()) {
-        offset = targetY - (floor - playerPosition.y);
+        offset = Math.floor(velocity) - (height() - (playerPosition.y + 1)) - 1;
       } else {
         offset = 0;
       }
       drawLevel("bottom");
       while (offset >= height()) {
+        // Calculate offset
         targetY = offset;
-        offset = targetY - (floor - playerPosition.y);
-        drawLevel("bottom");
+        offset = Math.floor(velocity) - (height() - (playerPosition.y + 1)) - 1;
+        // Calculate platformY (if it exists)
+        calculatePlatform(getSkippedTiles());
+        if (platformY !== null) {
+          drawLevel("bottom");
+          return;
+        }
       }
-      calculatePlatform(getSkippedTiles());
+      if (offset >= floor) {
+        platformY = null;
+      }
       targetY = 0 + offset;
       return;
     }
