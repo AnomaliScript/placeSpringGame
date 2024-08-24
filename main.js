@@ -23,10 +23,12 @@ let left = false;
 let right = false;
 const JUMPHEIGHT = 1.0;
 const GRAVITY = 0.25;
+let platformY;
+let targetY;
 let readyToFall = false;
 let readyToRise = false;
 let justEntered = false;
-let frameRate = 1000;
+let frameRate = 60;
 
 // Upside-Down Physics
 const gravitySwitch = "w";
@@ -204,6 +206,7 @@ to jump "onto blocks" and to also make sure the player was not able to bypass
 the original bugfix (which was originally only in setInterval(), now it's in both in that and the input functions)
 */
 let flag = false;
+
 function jpb() {
   // Prevent the player from "jumping onto" blocks
   // No need to "scan" tiles compared to falling because velocity's max isn't lower than -1
@@ -242,66 +245,69 @@ Note that "falling" and "rising" are "passive" forms of movement,
 meaning movement that happens when the player is doing nothing 
 and is just letting the gravity take them places
 */
-function verticalScrolling(targetYClone) {
+function verticalScrolling() {
   const playerPosition = getFirst(player);
   if (!reverseGravity) {
     // Normal case
-    if (targetYClone == -1 && levels[currentLevel].top !== null) {
+    if (targetY == -1 && levels[currentLevel].top !== null) {
       // Higher scrolling
       drawLevel("top");
       justEntered = true;
       // Floor update (immediate use)
-      return floor;
-    } else if (targetYClone == -1) {
+      targetY = floor;
+      return;
+    } else if (targetY == -1) {
       // Hitting the ceiling
       velocity = 1;
     }
     // Guard clause to exit the function for if a player has just entered another level
     if (justEntered) {
       justEntered = false;
-      return targetYClone;
+      return;
     }
     // Lower scrolling
-    if (targetYClone >= floor && velocity > 0 && levels[currentLevel].bottom !== null) {
+    if (targetY >= floor && velocity > 0 && levels[currentLevel].bottom !== null) {
       readyToFall = true;
     }
     if (levels[currentLevel].bottomPlat.includes(playerPosition.x)) {
       readyToFall = false;
-      return targetYClone;
+      return;
     }
     if (readyToFall) {
       console.log("falling!");
 
       // Carrying the velocity over
       let offset;
-      if (targetYClone >= height()) {
-        offset = targetYClone - (floor - playerPosition.y);
+      if (targetY >= height()) {
+        offset = targetY - (floor - playerPosition.y);
       } else {
         offset = 0;
       }
       drawLevel("bottom");
       while (offset >= height()) {
-        targetYClone = offset;
-        offset = targetYClone - (floor - playerPosition.y);
+        targetY = offset;
+        offset = targetY - (floor - playerPosition.y);
         drawLevel("bottom");
       }
-      return 0 + offset;
+      platformY = calculatePlatform(getSkippedTiles());
+      targetY = 0 + offset;
+      return;
     }
   } else {
     // Upside-down (reversed gravity) case
-    if (targetYClone == height() && levels[currentLevel].bottom !== null) {
+    if (targetY == height() && levels[currentLevel].bottom !== null) {
       // Lower scrolling (it's actually higher scrolling)
       drawLevel("bottom");
       justEntered = true;
       return 0;
-    } else if (targetYClone == height()) {
+    } else if (targetY == height()) {
       // Hitting the "ceiling"
       velocity = -1;
     }
     // Guard clause again
     if (justEntered) {
       justEntered = false;
-      return targetYClone;
+      return;
     }
     // Higher scrolling (it's actually lower scrolling)
     if (playerPosition.y == 0 && velocity <= 0 && levels[currentLevel].top !== null) {
@@ -314,10 +320,11 @@ function verticalScrolling(targetYClone) {
       console.log("rising!");
       readyToRise = false;
       drawLevel("top");
-      return floor;
+      targetY = floor;
+      return;
     }
   }
-  return targetYClone;
+  return;
 }
 
 // Tile scanning function
@@ -367,7 +374,7 @@ function determineIfIsSolidNearPlayer() {
         localIsSolidNearPlayer = true;
         break;
       }
-    } 
+    }
   } else {
     const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
     for (const sprite of oneAbove) {
@@ -397,9 +404,9 @@ setInterval(() => {
     floor = height() - 1;
     // troubleshooting addText stuff
     clearText();
-    addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 3, y: 1, color: color`0`}); // Display the player coordinates
+    addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 3, y: 1, color: color`0` }); // Display the player coordinates
     addText(`${velocity}`, { x: 13, y: 1, color: color`D` });
-    
+
     // Falling
     if (!reverseGravity) {
       velocity += GRAVITY;
@@ -415,13 +422,8 @@ setInterval(() => {
     }
     const targetTile = getTile(playerPosition.x, playerPosition.targetY); // Get the tile "below" the player
 
-    // Vertical Scrolling! (CONTROL THE targetY AT ALL COSTS)
-    targetY = verticalScrolling(targetY);
-    jpb();
-    
-    // Start of the "falling clipping player" bug fix //
     const skippedTiles = getSkippedTiles();
-    
+
     // Identify the platform position for the player to land on
     /* for (const tile of tilesWith(red)) {
       for (const sprite of tile) {
@@ -430,8 +432,14 @@ setInterval(() => {
         }
       }
     } */
-    let platformY = calculatePlatform(skippedTiles);
+    platformY = calculatePlatform(skippedTiles);
     
+    // Vertical Scrolling! (CONTROL THE targetY AT ALL COSTS)
+    verticalScrolling(targetY);
+    // jpb is only for active/"jumping" movement
+    jpb();
+
+
     addText(`${platformY}`, { x: 12, y: 5, color: color`F` });
 
     // WHERE PLAYER MOVEMENT WITH targetY HAPPENS (vertically, ofc)
@@ -443,17 +451,17 @@ setInterval(() => {
         getFirst(player).y = Math.min(targetY, floor);
       }
     } else {
-      if (platformY !== null) { 
+      if (platformY !== null) {
         getFirst(player).y = platformY + 1; // Adjust as needed for player size
         velocity = 0;
       } else {
         getFirst(player).y = Math.max(targetY, 0);
       }
     }
-    // End of the "falling clipping player" bug fix //
+
     addText(`${targetY}`, { x: 9, y: 5, color: color`H` });
-    
-    
+
+
     // Spider-Man (sticky) Surfaces
     /*
     const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
@@ -471,7 +479,7 @@ setInterval(() => {
     flag = false;
     jpb();
     addText(`flag: ${flag}`, { x: 3, y: 7, color: color`3` });
-    
+
     // airborne logic:
     // !reverseGravity = gravity case
     // !readyTo___ = 
@@ -507,8 +515,7 @@ setInterval(() => {
 }, frameRate);
 
 // Maps/levels
-const levels = [
-  {
+const levels = [{
     name: "start",
     left: "ruins",
     right: "place1",
@@ -531,7 +538,7 @@ bb.........gg....
 .................
 bb............bb.
 .........ss......`,
-    spawnPos: { x: 5, y: floor},
+    spawnPos: { x: 5, y: floor },
     /*
     topPlat is all of the x-coords that the player cannot enter the "top" level in
     It references the blocks from "top" level but the values are hard-coded and stored 
@@ -568,7 +575,7 @@ bb............bb.
 ................
 ................
 ........ssssssss`,
-    spawnPos: {x: 2, y: floor},
+    spawnPos: { x: 2, y: floor },
     topPlat: [],
     bottomPlat: []
   },
@@ -595,7 +602,7 @@ b....bd.....b....
 .bbbb..b.........
 ..........w......
 .................`,
-    spawnPos: {x: 12, y: floor},
+    spawnPos: { x: 12, y: floor },
     topPlat: [],
     bottomPlat: [0, 1, 4, 5, 10, 11, 14, 15, 16]
   },
@@ -620,7 +627,7 @@ d.g....bbb.......
 bbbb.............
 .................
 ....bbb..........`,
-    spawnPos: {x: 5, y: 12},
+    spawnPos: { x: 5, y: 12 },
     topPlat: [],
     bottomPlat: []
   },
@@ -643,7 +650,7 @@ bb..bb....bb..bbb
 ........bb.......
 .................
 .................`,
-    spawnPos: {x: 10, y: 7},
+    spawnPos: { x: 10, y: 7 },
     topPlat: [],
     bottomPlat: []
   },
@@ -664,7 +671,7 @@ bbbbbbbbbbbbb....
 ..g.....g.bbb.g..
 ..g.cc..g.....g..
 ..gbbbbbg.....g..`,
-    spawnPos: {x: 1, y: 2},
+    spawnPos: { x: 1, y: 2 },
     topPlat: [],
     bottomPlat: []
   }
@@ -790,7 +797,7 @@ function gravitySwitching() {
 
 // AFTERINPUT
 afterInput(() => {
-  
+
   // Coords
   let playerPosition = getFirst(player); // Get the spike sprite
   let spikePosition = getAll(spike); // Get the spike sprite
