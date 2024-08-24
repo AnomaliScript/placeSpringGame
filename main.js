@@ -10,6 +10,7 @@
 // Tile Sprites
 const player = "p";
 const spike = "s";
+const spikeFlipped = "i";
 const red = "e";
 const block = "b";
 const glass = "g";
@@ -83,6 +84,23 @@ setLegend(
 .LLLLLLLLLLLLLL.
 .LLLLLLLLLLLLLL.
 LLLLLLLLLLLLLLLL`],
+  [spikeFlipped, bitmap`
+LLLLLLLLLLLLLLLL
+.LLLLLLLLLLLLLL.
+.LLLLLLLLLLLLLL.
+..LLLLLLLLLLLL..
+..LLLLLLLLLLLL..
+...LLLLLLLLLL...
+...LLLLLLL1LL...
+....LLLLL1LL....
+....LLLLL1LL....
+.....LLL1LL.....
+.....LLLLLL.....
+......LLLL......
+......LLLL......
+.......LL.......
+................
+................`],
   [red, bitmap`
 3333333333333333
 3333333333333333
@@ -535,6 +553,13 @@ setInterval(() => {
         getFirst(player).y = levels[currentLevel].spawnPos.y;
       }
     }
+    let spikesFlipped = getAll(spikeFlipped);
+    for (let i = 0; i < spikesFlipped.length; i++) {
+      if (playerPosition.x == spikesFlipped[i].x && playerPosition.y == spikesFlipped[i].y) {
+        getFirst(player).x = levels[currentLevel].spawnPos.x;
+        getFirst(player).y = levels[currentLevel].spawnPos.y;
+      }
+    }
     if (debugMode) {
       addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 3, y: 1, color: color`9` }); // Display the player coordinates
       addText(`${Math.floor(velocity)}, ${Math.ceil(velocity)}`, { x: 13, y: 1, color: color`D` });
@@ -616,12 +641,61 @@ bb............bb.
     topPlat: [],
     bottomPlat: []
   },
-                {
-    name: "plains",
-    left: "trainStation",
-    right: "origin",
+  {
+    name: "stairs",
+    left: "origin",
+    right: ["childrensGallery", "leapOfFaith"],
+    slice: 6,
     top: null,
-    bottom: "caveEntrance",
+    bottom: null,
+    map: map`
+....b.....bbb...
+..b.......g.g...
+b.........gdg...
+....b.....bbb...
+..b...........b.
+b...........b...
+....b.....b.....
+..b.....b.....b.
+......b.....b...
+....b.....b.....
+..b.....b.....b.
+......b.....b...
+....b.....b.....`,
+    spawnPos: { x: 2, y: floor },
+    topPlat: [],
+    bottomPlat: []
+  },
+  {
+    name: "childrensGallery",
+    left: "stairs",
+    right: "exhibit",
+    top: null,
+    bottom: null,
+    map: map`
+iiiiiiiiiii
+..ggggg....
+.g.....g...
+g..b.b..g..
+g.......g..
+g.b.d.b.g..
+g..bbb..g..
+.g.....g...
+..ggggg....
+...........
+...........
+......bb...
+...bb....bb`,
+    spawnPos: { x: 2, y: floor },
+    topPlat: [],
+    bottomPlat: []
+  },
+  {
+    name: "leapOfFaith",
+    left: "stairs",
+    right: "darkroom",
+    top: null,
+    bottom: "creation",
     map: map`
 ................
 ................
@@ -630,15 +704,15 @@ bb............bb.
 ................
 ................
 ................
-.......bb.......
-.......gg.......
-.......bb.......
 ................
 ................
 ................
 ................
 ................
-........ssssssss`,
+................
+................
+................
+................`,
     spawnPos: { x: 2, y: floor },
     topPlat: [],
     bottomPlat: []
@@ -660,30 +734,33 @@ function drawLevel(direction) {
     // First player spawn, will never happen again
     addSprite(8, 0, player);
   }
-  const saveX = getFirst(player).x;
-  const saveY = getFirst(player).y;
+  let saveX = getFirst(player).x;
+  let saveY = getFirst(player).y;
   console.log(`Saved coords: ${saveX}, ${saveY}  Direction: ${direction}`);
   if (direction === "left") {
     currentLevel = convertToIndex(levels[currentLevel].left);
-    const level = levels[currentLevel];
-    setMap(level.map);
+    setMap(levels[currentLevel].map);
+    // Resetting the floor
+    floor = height() - 1;
     addSprite(width() - 1, saveY, player);
   } else if (direction === "right") {
     currentLevel = convertToIndex(levels[currentLevel].right);
-    const level = levels[currentLevel];
-    setMap(level.map);
+    setMap(levels[currentLevel].map);
+    // Resetting the floor
+    floor = height() - 1;
+    if (saveY > floor) {
+      saveY = floor;
+    }
     addSprite(0, saveY, player);
   } else if (direction === "top") {
     currentLevel = convertToIndex(levels[currentLevel].top);
-    const level = levels[currentLevel];
-    setMap(level.map);
+    setMap(levels[currentLevel].map);
     // Resetting the floor
     floor = height() - 1;
     addSprite(saveX, floor, player);
   } else if (direction === "bottom") {
     currentLevel = convertToIndex(levels[currentLevel].bottom);
-    const level = levels[currentLevel];
-    setMap(level.map);
+    setMap(levels[currentLevel].map);
     // Resetting the floor
     floor = height() - 1;
     addSprite(saveX, 0, player);
