@@ -253,7 +253,7 @@ function verticalScrolling() {
       return;
     }
     // Passive movement (gravity movement and acceleration)
-    if (targetY >= floor && Math.floor(velocity) > 0 && levels[currentLevel].bottom !== null) {
+    if (targetY >= floor && Math.floor(velocity) >= 0 && levels[currentLevel].bottom !== null) {
       readyToFall = true;
     }
     if (levels[currentLevel].bottomPlat.includes(playerPosition.x)) {
@@ -313,23 +313,23 @@ function verticalScrolling() {
       console.log("rising!");
 
       // Carrying the velocity over
-      drawLevel("top");
       if (targetY < 0) {
-        offset = floor + ((Math.ceil(velocity) + playerPosition.y) + 1);
+        offset = ((Math.ceil(velocity) + playerPosition.y) + 1);
       } else {
         offset = 0;
       }
-      while (offset < 0) {
+      drawLevel("top");
+      /* while (offset < 0) {
         // Calculate offset
-        targetY = offset;
-        offset = floor + ((Math.ceil(velocity) + playerPosition.y) + 1);
+        offset = ((Math.ceil(velocity) + playerPosition.y) + 1);
+        targetY = floor - offset;
         // Calculate platformY (if it exists)
         calculatePlatform(getSkippedTiles());
         if (platformY !== null) {
           drawLevel("top");
           return;
         }
-      }
+      } */
       /* if (offset <= 0) {
         platformY = null;
       } */
@@ -480,8 +480,8 @@ setInterval(() => {
     // airborne logic:
     // !reverseGravity = gravity case
     // !readyTo___ = checks for a level underneath and if the player is on the floor (or approaching it)
-    const regularStop = !reverseGravity && !readyToFall && !justEntered && velocity >= 0 && getFirst(player).y == floor;
-    const reverseStop = reverseGravity && !readyToRise && !justEntered && velocity <= 0 && getFirst(player).y == 0;
+    const regularStop = !reverseGravity && !readyToFall && !justEntered && velocity >= 0 && getFirst(player).y == floor && levels[currentLevel].bottom === null;
+    const reverseStop = reverseGravity && !readyToRise && !justEntered && velocity <= 0 && getFirst(player).y == 0 && levels[currentLevel].top === null;
     if ((determineIfIsSolidNearPlayer() && !reverseGravity) || regularStop) {
       velocity = 0;
       airborne = false; // Player can jump on platforms
@@ -492,6 +492,10 @@ setInterval(() => {
       airborne = true;
     }
 
+    if (debugMode) {
+      addText(`${readyToFall}`, { x: 6, y: 13, color: color`5` });
+      addText(`${readyToRise}`, { x: 12, y: 13, color: color`4` });
+    }
     if (readyToFall) {
       readyToFall = false;
     }
