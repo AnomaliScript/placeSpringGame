@@ -27,29 +27,44 @@ const GRAVITY = 0.3;
 // Gravity
 setInterval(() => {
   if (game.isRunning()) {
+    // troubleshooting stuff
     clearText();
     addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 8, y: 1, color: color`5`, scale: 0.8 }); // Display the player coordinates
     addText(`${velocity}`, { x: 8, y: 3, color: color`5` });
     addText(`${airborne}`, { x: 8, y: 6, color: color`5` });
-    velocity += GRAVITY;
-    getFirst(player).y += Math.floor(velocity);
 
-    const playerPosition = getFirst(player); // Get the player sprite
-    const tileBelow = getTile(playerPosition.x, playerPosition.y + 1); // Get the tile below the player
+    let playerX = getFirst(player).x; // Get the player sprite (for editing)
+    let playerY = getFirst(player).y; // Get the player sprite (for editing)
+    
+    velocity += GRAVITY;
+    /* 
+    Mininum function to make sure the velocity doesn't freeze the player middair because the (playerY + velocity)
+    is greater than the floor i.e. 16
+    */
+    const targetY = getFirst(player).y + Math.floor(velocity);
+    getFirst(player).y = Math.min(targetY, floor);
+
+    const playerPosition = getFirst(player); // Get the player sprite (for reference)
+    const targetTile = getTile(playerPosition.x, playerPosition.targetY); // Get the tile "below" the player
+    const skippedTilesBelow = getTile(playerPosition.x, playerPosition.y + 1); // Get the tiles skipped to check for platforms that shouldn't be clipped through
     let isSolidUnderPlayer = false;
-    for (const sprite of tileBelow) {
-        if (sprite.type === block || sprite.type === glass) {
-            isSolidUnderPlayer = true;
-            airborne = false;
-            break;
-        }
+    for (const sprite of targetTile) {
+      if (sprite.type === block || sprite.type === glass) {
+        isSolidUnderPlayer = true;
+        velocity = 0; // Set velocity to zero to prevent clipping
+        airborne = false;
+        break;
+      }
     }
-    if (isSolidUnderPlayer || getFirst(player).y == 16) {
-      velocity = 0; // Set velocity to zero to prevent clipping
+    if (isSolidUnderPlayer || getFirst(player).y == floor) {
       airborne = false;
+      velocity = 0;
+    } else {
+      airborne = true;
     }
   }
-}, /* frame updates after */ 60 /* seconds */);
+}, /* frame updates after */ 60 /* milliseconds */);
+
 // Upside-down B)
 const gravitySwitch = "w";
 var reverseGravity = false;
@@ -232,13 +247,13 @@ const levels = [{
 .................
 .................
 .................
+..bb.............
 .................
+.....bb..........
 .................
+........gg.......
 .................
-.................
-.................
-.................
-...........gg....
+bb.........gg....
 .................
 ...............bb
 .........ss......`,
