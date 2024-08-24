@@ -26,7 +26,7 @@ const GRAVITY = 0.25;
 let readyToFall = false;
 let readyToRise = false;
 let justEntered = false;
-let frameRate = 60;
+let frameRate = 1000;
 
 // Upside-Down Physics
 const gravitySwitch = "w";
@@ -255,12 +255,12 @@ function verticalScrolling(targetYClone) {
       return floor;
     } else if (targetYClone == -1) {
       // Hitting the ceiling
-      velocity = 1;
+      velocity = -velocity;
     }
     // Guard clause to exit the function for if a player has just entered another level
     if (justEntered) {
       justEntered = false;
-      return;
+      return targetYClone;
     }
     // Lower scrolling
     if (playerPosition.y == floor && velocity >= 0 && levels[currentLevel].bottom !== null) {
@@ -278,7 +278,7 @@ function verticalScrolling(targetYClone) {
   } else {
     // Upside-down (reversed gravity) case
     if (targetYClone == height() && levels[currentLevel].bottom !== null) {
-      // Lower scrolling
+      // Lower scrolling (it's actually higher scrolling)
       drawLevel("bottom");
       justEntered = true;
       return 0;
@@ -289,9 +289,9 @@ function verticalScrolling(targetYClone) {
     // Guard clause again
     if (justEntered) {
       justEntered = false;
-      return;
+      return targetYClone;
     }
-    // Higher scrolling
+    // Higher scrolling (it's actually lower scrolling)
     if (playerPosition.y == 0 && velocity <= 0 && levels[currentLevel].top !== null) {
       readyToRise = true;
     }
@@ -302,7 +302,7 @@ function verticalScrolling(targetYClone) {
       console.log("rising!");
       readyToRise = false;
       drawLevel("top");
-      return floor();
+      return floor;
     }
   }
   return targetYClone;
@@ -460,13 +460,14 @@ setInterval(() => {
     addText(`flag: ${flag}`, { x: 3, y: 7, color: color`3` });
     
     // airborne logic
-    const regularStop = !readyToFall && !reverseGravity && getFirst(player).y == floor && levels[currentLevel].bottom === null;
-    const reverseStop = !readyToRise && reverseGravity && getFirst(player).y == 0 && levels[currentLevel].top === null;
+    const regularStop = !reverseGravity && !readyToFall && velocity >= 0 && getFirst(player).y == floor;
+    const reverseStop = reverseGravity && !readyToRise && velocity <= 0 && getFirst(player).y == 0;
     if ((determineIfIsSolidNearPlayer() && !reverseGravity) || regularStop) {
       velocity = 0;
       airborne = false; // Player can jump on platforms
     } else if ((determineIfIsSolidNearPlayer() && reverseGravity) || reverseStop) {
-      
+      velocity = 0;
+      airborne = false;
     } else {
       airborne = true;
     }
@@ -569,9 +570,9 @@ b....bd.....b....
 ...b.......b..b..
 ....b.....b......
 .................
-.....b...........
-.................
-......b..........
+.....bb.bb.......
+.bbbb..b.........
+..........w......
 .................`,
     spawnPos: {x: 12, y: floor},
     topPlat: [],
@@ -660,7 +661,7 @@ function drawLevel(direction) {
     const level = levels[currentLevel];
     setMap(level.map);
     // The game takes these positions with a grain of salt :sad:
-    addSprite(saveX, height() - 1, player);
+    addSprite(saveX, 0, player);
   } else if (direction === "bottom") {
     currentLevel = convertToIndex(levels[currentLevel].bottom);
     const level = levels[currentLevel];
