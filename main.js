@@ -261,12 +261,28 @@ setInterval(() => {
       velocity -= GRAVITY;
     }
 
+    // Setting player "targets" to move to next frame (doesn't actually move yet)
     const playerPosition = getFirst(player); // Get the player sprite (for reference)
     let targetY = playerPosition.y + Math.floor(velocity);
     if (reverseGravity) {
       targetY = playerPosition.y + Math.ceil(velocity);
     }
     const targetTile = getTile(playerPosition.x, playerPosition.targetY); // Get the tile "below" the player
+
+    // Vertical Scrolling!
+    if (!reverseGravity) {
+      // Normal case
+      if (targetY == -1 && levels[currentLevel].top !== null) {
+        // Higher scrolling
+        drawLevel("top");
+        targetY = floor - 1;
+      } else if (playerPosition.y == floor && velocity >= 0 && levels[currentLevel].bottom !== null) {
+        // Lower scrolling
+        drawLevel("bottom");
+      }
+    } else {
+      // Upside-down (reversed gravity) case
+    }
     
     // Start of the "falling clipping player" bug fix //
     const skippedTiles = [];
@@ -326,7 +342,7 @@ setInterval(() => {
     addText(`${targetY}`, { x: 3, y: 9, color: color`H` });
     
     
-    // ACCIDENTALLY DISCOVERED HOW TO DO STICKY SURFACES (like Spider-Man)
+    // Spider-Man (sticky) Surfaces
     /*
     const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
     for (const sprite of oneAbove) {
@@ -361,29 +377,15 @@ setInterval(() => {
     addText(`${flag}`, { x: 3, y: 11, color: color`3` });
     
     // airborne logic
-    let transitionCondition = isSolidNearPlayer || (!reverseGravity && getFirst(player).y == floor && levels[currentLevel].bottom === null) || (reverseGravity && getFirst(player).y == 0 && levels[currentLevel].top === null);
+    let transitionCondition = isSolidNearPlayer || (!reverseGravity && getFirst(player).y == floor && velocity >= 0 && levels[currentLevel].bottom === null) || (reverseGravity && getFirst(player).y == 0 && levels[currentLevel].top === null);
     addText(`:: ${transitionCondition}`, { x: 7, y: 3, color: color`5` });
-    if (isSolidNearPlayer || (!reverseGravity && getFirst(player).y == floor && levels[currentLevel].bottom === null) || (reverseGravity && getFirst(player).y == 0 && levels[currentLevel].top === null)) {
+    if (isSolidNearPlayer || (!reverseGravity && getFirst(player).y == floor && velocity >= 0 && levels[currentLevel].bottom === null) || (reverseGravity && getFirst(player).y == 0 && levels[currentLevel].top === null)) {
       velocity = 0;
       airborne = false; // Player can jump on platforms
     } else {
       airborne = true;
     }
     addText(`airborne: ${airborne}`, { x: 3, y: 5, color: color`5` });
-
-    // Vertical Scrolling!
-    if (!reverseGravity) {
-      // Normal case
-      // Positive scrolling
-      if (targetY == -1 && levels[currentLevel].top !== null) {
-        drawLevel("top");
-      } else if (playerPosition.y == floor && velocity >= 0 && levels[currentLevel].bottom !== null) {
-        // Negative scrolling
-        drawLevel("bottom");
-      }
-    } else {
-      // Upside-down (reversed gravity) case
-    }
     
     // HOVER CASES
     // DEATH case :skull:
@@ -512,7 +514,7 @@ function drawLevel(direction) {
     // starting level rendering
     setMap(levels[0].map);
     // First player spawn, will never happen again
-    addSprite(5, floor, player);
+    addSprite(8, 0, player);
   }
   const saveY = getFirst(player).y;
   const saveX = getFirst(player).x;
