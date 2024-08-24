@@ -5,6 +5,8 @@
 @addedOn: 2024-08-10
 */
 
+// NOTE: Lowering the frame rate too much can cause unexpected bugs/issues in the game
+
 // Tile Sprites
 const player = "p";
 const spike = "s";
@@ -28,10 +30,14 @@ let targetY;
 let readyToFall = false;
 let readyToRise = false;
 let justEntered = false;
+let offset;
 let frameRate = 60;
 
 // Upside-Down Physics
 let reverseGravity = false;
+
+// dev variables
+let debugMode = true;
 
 /*✧･ﾟ: *✧･ﾟ:* Textures! ✧･ﾟ: *✧･ﾟ:*/
 setLegend(
@@ -200,7 +206,7 @@ function jpb() {
     const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
     for (const sprite of oneAbove) {
       if (sprite.type === block || sprite.type === glass) {
-        velocity = 1;
+        velocity = 0.5;
         flag = true;
         break;
       }
@@ -213,7 +219,7 @@ function jpb() {
     const oneBelow = getTile(getFirst(player).x, getFirst(player).y + 1);
     for (const sprite of oneBelow) {
       if (sprite.type === block || sprite.type === glass) {
-        velocity = -1;
+        velocity = -0.5;
         flag = true;
         break;
       }
@@ -230,9 +236,8 @@ and is just letting the gravity take them places
 function verticalScrolling() {
   const playerPosition = getFirst(player);
   if (!reverseGravity) {
-    // Normal case
-    if (targetY == -1 && levels[currentLevel].top !== null) {
-      // Higher scrolling
+    if (targetY < 0 && levels[currentLevel].top !== null) {
+      // Active movement (jump)
       drawLevel("top");
       justEntered = true;
       // Floor update (immediate use)
@@ -247,8 +252,8 @@ function verticalScrolling() {
       justEntered = false;
       return;
     }
-    // Lower scrolling
-    if (targetY >= floor && velocity > 0 && levels[currentLevel].bottom !== null) {
+    // Passive movement (gravity movement and acceleration)
+    if (targetY >= floor && Math.floor(velocity) >= 0 && levels[currentLevel].bottom !== null) {
       readyToFall = true;
     }
     if (levels[currentLevel].bottomPlat.includes(playerPosition.x)) {
@@ -259,8 +264,7 @@ function verticalScrolling() {
       console.log("falling!");
 
       // Carrying the velocity over
-      let offset;
-      if (targetY >= height()) {
+      if (targetY > floor) {
         offset = Math.floor(velocity) - (height() - (playerPosition.y + 1)) - 1;
       } else {
         offset = 0;
@@ -277,19 +281,18 @@ function verticalScrolling() {
           return;
         }
       }
-      if (offset >= floor) {
-        platformY = null;
-      }
+      //if (offset >= floor) {
+        //platformY = null;
+      //}
       targetY = 0 + offset;
       return;
     }
-  } else {
-    // Upside-down (reversed gravity) case
-    if (targetY == height() && levels[currentLevel].bottom !== null) {
-      // Lower scrolling (it's actually higher scrolling)
+  } else { /************  (reverse/upside-down gravity starts here)  ***********************/
+    if (targetY > floor && levels[currentLevel].bottom !== null) {
+      // Active movement (jump)
       drawLevel("bottom");
       justEntered = true;
-      return 0;
+      return;
     } else if (targetY == height()) {
       // Hitting the "ceiling"
       velocity = -1;
@@ -299,8 +302,8 @@ function verticalScrolling() {
       justEntered = false;
       return;
     }
-    // Higher scrolling (it's actually lower scrolling)
-    if (playerPosition.y == 0 && velocity <= 0 && levels[currentLevel].top !== null) {
+    // Passive movement (gravity movement and acceleration)
+    if (targetY <= 0 && Math.ceil(velocity) <= 0 && levels[currentLevel].top !== null) {
       readyToRise = true;
     }
     if (levels[currentLevel].topPlat.includes(playerPosition.x)) {
@@ -308,9 +311,30 @@ function verticalScrolling() {
     }
     if (readyToRise) {
       console.log("rising!");
-      readyToRise = false;
+
+      // Carrying the velocity over
+      if (targetY < 0) {
+        offset = ((Math.ceil(velocity) + playerPosition.y) + 1);
+      }
       drawLevel("top");
-      targetY = floor;
+      if (Math.abs(offset) >= height()) {
+        while (Math.abs(offset) >= height()) {
+          // Calculate platformY (if it exists)
+          calculatePlatform(getSkippedTiles());
+          if (platformY !== null) {
+            return;
+          }
+          // Calculate offset
+          offset -= height();
+          drawLevel("top");
+        }
+      }
+      /* if (offset <= 0) {
+        platformY = null;
+      } */
+      // Calculate platformY (if it exists)
+      calculatePlatform(getSkippedTiles());
+      targetY = floor + offset;
       return;
     }
   }
@@ -391,8 +415,6 @@ setInterval(() => {
     floor = height() - 1;
     // troubleshooting addText stuff
     clearText();
-    addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 3, y: 1, color: color`0` }); // Display the player coordinates
-    addText(`${velocity}`, { x: 13, y: 1, color: color`D` });
 
     // Falling
     if (!reverseGravity) {
@@ -416,7 +438,6 @@ setInterval(() => {
         }
       }
     } */
-    calculatePlatform(getSkippedTiles());
     
     // Vertical Scrolling! (CONTROL THE targetY AT ALL COSTS)
     verticalScrolling();
@@ -424,9 +445,8 @@ setInterval(() => {
     jpb();
 
 
-    addText(`${platformY}`, { x: 12, y: 5, color: color`F` });
-
     // WHERE PLAYER MOVEMENT WITH targetY HAPPENS (vertically, ofc)
+    calculatePlatform(getSkippedTiles());
     if (!reverseGravity) {
       if (platformY !== null) {
         getFirst(player).y = platformY - 1; // Adjust as needed for player size
@@ -443,8 +463,6 @@ setInterval(() => {
       }
     }
 
-    addText(`${targetY}`, { x: 9, y: 5, color: color`H` });
-
 
     // Spider-Man (sticky) Surfaces
     /*
@@ -457,16 +475,12 @@ setInterval(() => {
     }
     */
 
-    // The diisnp function accounts for both gravity cases
-    addText(`${determineIfIsSolidNearPlayer()}`, { x: 3, y: 5, color: color`L` });
-
     flag = false;
     jpb();
-    addText(`flag: ${flag}`, { x: 3, y: 7, color: color`3` });
 
     // airborne logic:
     // !reverseGravity = gravity case
-    // !readyTo___ = 
+    // !readyTo___ = checks for a level underneath and if the player is on the floor (or approaching it)
     const regularStop = !reverseGravity && !readyToFall && velocity >= 0 && getFirst(player).y == floor;
     const reverseStop = reverseGravity && !readyToRise && velocity <= 0 && getFirst(player).y == 0;
     if ((determineIfIsSolidNearPlayer() && !reverseGravity) || regularStop) {
@@ -478,8 +492,11 @@ setInterval(() => {
     } else {
       airborne = true;
     }
-    addText(`airborne: ${airborne}`, { x: 3, y: 3, color: color`1` });
 
+    if (debugMode) {
+      addText(`${readyToFall}`, { x: 6, y: 13, color: color`5` });
+      addText(`${readyToRise}`, { x: 12, y: 13, color: color`4` });
+    }
     if (readyToFall) {
       readyToFall = false;
     }
@@ -494,6 +511,19 @@ setInterval(() => {
         getFirst(player).x = levels[currentLevel].spawnPos.x;
         getFirst(player).y = levels[currentLevel].spawnPos.y;
       }
+    }
+    if (debugMode) {
+      addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 3, y: 1, color: color`9` }); // Display the player coordinates
+      addText(`${Math.floor(velocity)}, ${Math.ceil(velocity)}`, { x: 13, y: 1, color: color`D` });
+      addText(`${floor}`, { x: 15, y: 7, color: color`5` });
+      addText(`${height()}`, { x: 14, y: 9, color: color`4` });
+      addText(`offset: ${offset}`, { x: 2, y: 9, color: color`7` });
+      addText(`flag: ${flag}`, { x: 3, y: 7, color: color`3` });
+      addText(`airborne: ${airborne}`, { x: 3, y: 3, color: color`1` });
+      addText(`${targetY}`, { x: 9, y: 5, color: color`H` });
+      addText(`${determineIfIsSolidNearPlayer()}`, { x: 3, y: 5, color: color`C` });
+      addText(`${platformY}`, { x: 12, y: 5, color: color`6` });
+      addText(`${justEntered}`, { x: 3, y: 11, color: color`8` });
     }
   }
 }, frameRate);
@@ -519,8 +549,8 @@ bb...bb..........
 ........gg.......
 .................
 bb.........gg....
-.................
-bb............bb.
+...............b.
+bb............b..
 .........ss......`,
     spawnPos: { x: 5, y: floor },
     /*
@@ -601,7 +631,7 @@ b....bd.....b....
 .................
 .......c.........
 ......bbbb.......
-.....b....sss....
+.....b...........
 ....b.....bbb....
 ..........g.b.s..
 s...bbb...g.b.bb.
@@ -751,6 +781,7 @@ onInput("d", () => {
 });
 
 onInput("i", () => {
+  velocity = -velocity * 0.5;
   gravitySwitching();
   //jpb();
 });
@@ -760,6 +791,15 @@ onInput("k", () => {
     frameRate = 500;
   } else {
     frameRate = 60;
+  }
+  //jpb();
+});
+
+onInput("l", () => {
+  if (debugMode) {
+    debugMode = false;
+  } else {
+    debugMode = true;
   }
   //jpb();
 });
