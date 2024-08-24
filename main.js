@@ -25,6 +25,7 @@ const JUMPHEIGHT = 1.0;
 const GRAVITY = 0.25;
 let readyToFall = false;
 let readyToRise = false;
+let justEntered = false;
 let frameRate = 60;
 
 // Upside-Down Physics
@@ -236,6 +237,11 @@ function jpb() {
 }
 
 // Vertical Scrolling Function
+/* 
+Note that "falling" and "rising" are "passive" forms of movement, 
+meaning movement that happens when the player is doing nothing 
+and is just letting the gravity take them places
+*/
 function verticalScrolling(targetYClone) {
   const playerPosition = getFirst(player);
   if (!reverseGravity) {
@@ -243,10 +249,18 @@ function verticalScrolling(targetYClone) {
     if (targetYClone == -1 && levels[currentLevel].top !== null) {
       // Higher scrolling
       drawLevel("top");
-      return floor - 1;
+      justEntered = true;
+      // Floor update (immediate use)
+      floor = height() - 1;
+      return floor;
     } else if (targetYClone == -1) {
       // Hitting the ceiling
       velocity = 1;
+    }
+    // Guard clause to exit the function for if a player has just entered another level
+    if (justEntered) {
+      justEntered = false;
+      return;
     }
     // Lower scrolling
     if (playerPosition.y == floor && velocity >= 0 && levels[currentLevel].bottom !== null) {
@@ -255,8 +269,8 @@ function verticalScrolling(targetYClone) {
     if (levels[currentLevel].bottomPlat.includes(playerPosition.x)) {
       readyToFall = false;
     }
-    addText(`falling: ${readyToFall}`, {x: 3, y: 9, color: color`8`});
     if (readyToFall) {
+      console.log("falling!");
       readyToFall = false;
       drawLevel("bottom");
       return 0;
@@ -266,10 +280,16 @@ function verticalScrolling(targetYClone) {
     if (targetYClone == height() && levels[currentLevel].bottom !== null) {
       // Lower scrolling
       drawLevel("bottom");
-      return 1;
+      justEntered = true;
+      return 0;
     } else if (targetYClone == height()) {
       // Hitting the "ceiling"
       velocity = -1;
+    }
+    // Guard clause again
+    if (justEntered) {
+      justEntered = false;
+      return;
     }
     // Higher scrolling
     if (playerPosition.y == 0 && velocity <= 0 && levels[currentLevel].top !== null) {
@@ -278,11 +298,11 @@ function verticalScrolling(targetYClone) {
     if (levels[currentLevel].topPlat.includes(playerPosition.x)) {
       readyToRise = false;
     }
-    addText(`falling: ${readyToRise}`, {x: 2, y: 11, color: color`F`});
     if (readyToRise) {
+      console.log("rising!");
       readyToRise = false;
       drawLevel("top");
-      return floor() - 1;
+      return floor();
     }
   }
   return targetYClone;
