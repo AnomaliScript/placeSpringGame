@@ -5,6 +5,7 @@
 @addedOn: 2024-08-10
 */
 
+
 // Tile Sprites
 const player = "p";
 const spike = "s";
@@ -191,18 +192,29 @@ function jpb() {
     const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
     for (const sprite of oneAbove) {
       if (sprite.type === block || sprite.type === glass) {
-        velocity = 1;
-        flag = true;
-        break;
+        if (velocity == 0) {
+          // Just passing in
+          velocity = 0.25;
+          break;
+        } else {
+          // Hit the block with force
+          velocity = 1;
+          flag = true;
+        }
       }
     }
   } else {
     const oneBelow = getTile(getFirst(player).x, getFirst(player).y + 1);
     for (const sprite of oneBelow) {
       if (sprite.type === block || sprite.type === glass) {
-        velocity = -1;
-        flag = true;
-        break;
+        if (velocity == 0) {
+          velocity = -0.25;
+          break;
+        } else {
+          velocity = -1;
+          flag = true;
+          break;
+        }
       }
     }
   }
@@ -275,12 +287,12 @@ setInterval(() => {
         getFirst(player).y = Math.min(targetY, floor);
       }
     } else {
-      if (platformY !== null) { 
+      /* if (platformY !== null) { 
         getFirst(player).y = platformY + 1; // Adjust as needed for player size
         velocity = 0;
-      } else {
+      } else { */
         getFirst(player).y = Math.max(targetY, 0);
-      }
+      // }
     }
     // End of the "falling clipping player" bug fix //
     addText(`${targetY}`, { x: 3, y: 9, color: color`H` });
@@ -356,7 +368,7 @@ const levels = [
 .................
 .................
 .................
-..bb.............
+..bbb............
 .................
 bb...bb..........
 .................
