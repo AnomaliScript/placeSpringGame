@@ -28,20 +28,23 @@ const GRAVITY = 0.25;
 let platformY;
 let targetY;
 let readyToFall = false;
-let readyToRise = false;
 let justEntered = false;
 let offset;
 let frameRate = 60;
 
 // Upside-Down Physics
 let reverseGravity = false;
+let readyToRise = false;
 
 // Abilities!
 let doubleJump = false;
 let gravityAbility = false;
 let breakingAbility = false;
 
-// dev variables
+// Aeaeaeaeaesthetics
+let framesUntilGlassDisappears = 0;
+
+// Developer Stuff
 let debugMode = false;
 
 /*✧･ﾟ: *✧･ﾟ:* Textures! ✧･ﾟ: *✧･ﾟ:*/
@@ -132,22 +135,22 @@ LLLLLLLLLLLLLLLL`],
 7222222222222227
 7777777777777777`],
   [glassBroken, bitmap`
+....7......7....
+.....7....7....7
+.....7...7....7.
+.7...7...7....7.
+.7...7..7....7..
+..77.7..7..77...
+..........7.....
+....77.......77.
+..77..7....77..7
 ................
-................
-................
-................
-................
-................
-................
-................
-................
-..............7.
-..7........7....
-........7.......
-7.....7..7....7.
-.7..77....7.7...
-7..7....7....7..
-....7......7..7.`],
+...777..7..7....
+..7....7....7...
+.7.....7.7..77..
+7....7.7..7..7..
+....7......7..7.
+....7..........7`],
   [crate, bitmap`
 1111111111111111
 1CC1C1CCC1C1CCC1
@@ -513,10 +516,12 @@ setInterval(() => {
     }
 
     // Sweeping up the glass
-    for (const tile in tilesWith(glassBroken)) {
-      for (const sprite of tile) {
-        if (sprite.type === glassBroken) {
+    for (const sprite of getAll(glassBroken)) {
+      if (sprite.type === glassBroken) {
+        if (framesUntilGlassDisappears === 0) {
           sprite.remove();
+        } else {
+          framesUntilGlassDisappears -= 1;
         }
       }
     }
@@ -548,11 +553,11 @@ setInterval(() => {
 
 // Maps/levels
 const levels = [{
-    name: "start",
-    left: "ruins",
-    right: "place1",
-    top: "reach1",
-    bottom: "belowStart",
+    name: "origin",
+    left: "plains",
+    right: "stairs",
+    top: null,
+    bottom: null,
     map: map`
 .................
 .......bb........
@@ -576,20 +581,20 @@ bb............bb.
     It references the blocks from "top" level but the values are hard-coded and stored 
     in the current level because sprig can't access data from other levels
     */
-    topPlat: [4, 5, 6],
+    topPlat: [],
     /*
     bottomPlat is all of the x-coords that the player cannot enter the "bottom" level in
     It references the "bottom" level but the values are hard-coded and stored 
     in the current level because sprig can't access data from other levels
     */
-    bottomPlat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    bottomPlat: []
   },
   {
-    name: "place1",
-    left: "start",
-    right: "theGap",
-    top: "reach1a",
-    bottom: null,
+    name: "plains",
+    left: "trainStation",
+    right: "origin",
+    top: null,
+    bottom: "caveEntrance",
     map: map`
 ................
 ................
@@ -611,99 +616,30 @@ bb............bb.
     topPlat: [],
     bottomPlat: []
   },
-  {
-    name: "ruins",
-    left: null,
-    right: "start",
+                {
+    name: "plains",
+    left: "trainStation",
+    right: "origin",
     top: null,
-    bottom: "belowRuins",
+    bottom: "caveEntrance",
     map: map`
-......b..........
-.......b.........
-....b...b........
-...b...........g.
-..b.......b...g..
-.....d.....b.g...
-b....bd.....b....
-.b....b.....g....
-..b....b....b.d..
-...b.......b..b..
-....b.....b......
-.................
-.....bb.bb.......
-.bbbb..b.........
-.................
-.................`,
-    spawnPos: { x: 12, y: floor },
-    topPlat: [],
-    bottomPlat: [0, 1, 4, 5, 10, 11, 14, 15, 16]
-  },
-  {
-    name: "reach1",
-    left: null,
-    right: null,
-    top: null,
-    bottom: "start",
-    map: map`
-.................
-.................
-.......c.........
-......bbbb.......
-.....b...........
-....b.....bbb....
-..........g.b.s..
-s...bbb...g.b.bb.
-bbb.......bbb....
-..g..............
-d.g....bbb.......
-bbbb.............
-.................
-....bbb..........`,
-    spawnPos: { x: 5, y: 12 },
-    topPlat: [],
-    bottomPlat: []
-  },
-  {
-    name: "belowRuins",
-    left: null,
-    right: null,
-    top: "ruins",
-    bottom: null,
-    map: map`
-bb..bb....bb..bbb
-.................
-...b........b....
-..............bb.
-......bbb........
-..gggb..........b
-..b.........bbb..
-...........bb....
-.........bbb.....
-........bb.......
-.................
-.................`,
-    spawnPos: { x: 10, y: 7 },
-    topPlat: [],
-    bottomPlat: []
-  },
-  {
-    name: "belowStart",
-    left: null,
-    right: null,
-    top: "start",
-    bottom: null,
-    map: map`
-bbbbbbbbbbbbb....
-.................
-..s.s.s......b...
-.bbbbbbb.........
-.................
-..sssssss.....bbb
-..bbbbbbb.....g..
-..g.....g.bbb.g..
-..g.cc..g.....g..
-..gbbbbbg.....g..`,
-    spawnPos: { x: 1, y: 2 },
+................
+................
+................
+................
+................
+................
+................
+.......bb.......
+.......gg.......
+.......bb.......
+................
+................
+................
+................
+................
+........ssssssss`,
+    spawnPos: { x: 2, y: floor },
     topPlat: [],
     bottomPlat: []
   }
@@ -846,21 +782,11 @@ function breakGlass() {
       if (sprite.type === glass) {
         sprite.remove();
         addSprite(scanningX, scanningY, glassBroken);
+        framesUntilGlassDisappears = 3;
       }
     }
   }
 }
-
-// I tried
-/* time (for glass animation)
-function sleep(ms) {
-  const start = Date.now();
-  while (Date.now() - start < ms) {
-  }
-} */
-
-// doors
-
 
 // AFTERINPUT (literally useless)
 afterInput(() => {
