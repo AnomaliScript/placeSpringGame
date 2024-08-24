@@ -262,18 +262,30 @@ function verticalScrolling(targetYClone) {
       return targetYClone;
     }
     // Lower scrolling
-    if (playerPosition.y == floor && velocity >= 0 && levels[currentLevel].bottom !== null) {
+    if (targetYClone >= floor && velocity > 0 && levels[currentLevel].bottom !== null) {
       readyToFall = true;
     }
     if (levels[currentLevel].bottomPlat.includes(playerPosition.x)) {
       readyToFall = false;
+      return targetYClone;
     }
     if (readyToFall) {
       console.log("falling!");
-      readyToFall = false;
-      // TODO?
+
+      // Carrying the velocity over
+      let offset;
+      if (targetYClone >= height()) {
+        offset = targetYClone - (floor - playerPosition.y);
+      } else {
+        offset = 0;
+      }
       drawLevel("bottom");
-      return 0 + Math.floor(velocity);
+      while (offset >= height()) {
+        targetYClone = offset;
+        offset = targetYClone - (floor - playerPosition.y);
+        drawLevel("bottom");
+      }
+      return 0 + offset;
     }
   } else {
     // Upside-down (reversed gravity) case
@@ -460,7 +472,9 @@ setInterval(() => {
     jpb();
     addText(`flag: ${flag}`, { x: 3, y: 7, color: color`3` });
     
-    // airborne logic
+    // airborne logic:
+    // !reverseGravity = gravity case
+    // !readyTo___ = 
     const regularStop = !reverseGravity && !readyToFall && velocity >= 0 && getFirst(player).y == floor;
     const reverseStop = reverseGravity && !readyToRise && velocity <= 0 && getFirst(player).y == 0;
     if ((determineIfIsSolidNearPlayer() && !reverseGravity) || regularStop) {
@@ -473,7 +487,13 @@ setInterval(() => {
       airborne = true;
     }
     addText(`airborne: ${airborne}`, { x: 3, y: 3, color: color`1` });
-    
+
+    if (readyToFall) {
+      readyToFall = false;
+    }
+    if (readyToRise) {
+      readyToRise = false;
+    }
     // HOVER CASES
     // DEATH case :skull:
     let spikes = getAll(spike);
@@ -493,7 +513,7 @@ const levels = [
     left: "ruins",
     right: "place1",
     top: "reach1",
-    bottom: null,
+    bottom: "belowStart",
     map: map`
 .................
 .......bb........
@@ -523,7 +543,7 @@ bb............bb.
     It references the "bottom" level but the values are hard-coded and stored 
     in the current level because sprig can't access data from other levels
     */
-    bottomPlat: []
+    bottomPlat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
   },
   {
     name: "place1",
@@ -626,6 +646,27 @@ bb..bb....bb..bbb
     spawnPos: {x: 10, y: 7},
     topPlat: [],
     bottomPlat: []
+  },
+  {
+    name: "belowStart",
+    left: null,
+    right: null,
+    top: "start",
+    bottom: null,
+    map: map`
+bbbbbbbbbbbbb....
+.................
+..s.s.s......b...
+.bbbbbbb.........
+.................
+..sssssss.....bbb
+..bbbbbbb.....g..
+..g.....g.bbb.g..
+..g.cc..g.....g..
+..gbbbbbg.....g..`,
+    spawnPos: {x: 1, y: 2},
+    topPlat: [],
+    bottomPlat: []
   }
 ]
 
@@ -720,6 +761,15 @@ onInput("d", () => {
 
 onInput("i", () => {
   gravitySwitching();
+  //jpb();
+});
+
+onInput("k", () => {
+  if (frameRate == 60) {
+    frameRate = 500;
+  } else {
+    frameRate = 60;
+  }
   //jpb();
 });
 
