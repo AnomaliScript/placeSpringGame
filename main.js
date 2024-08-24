@@ -21,8 +21,27 @@ const door = "d";
 // Physics Variables
 let velocity = 0;
 var airborne = false;
+var left = false;
+var right = false;
 const JUMPHEIGHT = 1.0;
 const GRAVITY = 0.25;
+
+/*
+jump platform bug (jpb) bugfix, I need to make this a function in order to not have the player be able
+to jump "onto blocks" and to also make sure the player was not able to bypass 
+the original bugfix (which was originally only in setInterval(), now it's in both in that and the input functions)
+*/
+function jpb() {
+  // Prevent the player from "jumping onto" blocks
+  // No need to "scan" tiles compared to falling because velocity's max isn't lower than -1
+  const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
+  for (const sprite of oneAbove) {
+    if (sprite.type === block || sprite.type === glass) {
+      velocity = 1;
+      break;
+    }
+  }
+}
 
 // Gravity
 setInterval(() => {
@@ -30,8 +49,8 @@ setInterval(() => {
     
     // troubleshooting addText stuff
     clearText();
-    addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 8, y: 1, color: color`5`}); // Display the player coordinates
-    addText(`${velocity}`, { x: 8, y: 3, color: color`D` });
+    addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 3, y: 1, color: color`5`}); // Display the player coordinates
+    addText(`${velocity}`, { x: 3, y: 3, color: color`D` });
     
     // Falling
     velocity += GRAVITY;
@@ -39,9 +58,8 @@ setInterval(() => {
     const playerPosition = getFirst(player); // Get the player sprite (for reference)
     const targetY = getFirst(player).y + Math.floor(velocity);
     const targetTile = getTile(playerPosition.x, playerPosition.targetY); // Get the tile "below" the player
-    addText(`${targetTile.x}, ${targetTile.y}`, { x: 5, y: 4, color: color`5` });
     
-    // Start of the "clipping player" bug fix //
+    // Start of the "falling clipping player" bug fix //
     const skippedTilesBelow = [];
     for (let i = 1; i <= Math.abs(Math.floor(velocity)); i++) {
       const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
@@ -73,17 +91,19 @@ setInterval(() => {
       getFirst(player).y = Math.min(targetY, floor);
     }
     
-    // End of the "clipping player" bug fix //
-    
-    // Prevent the player from "jumping onto" blocks
-    // No need to "scan" tiles compared to falling because velocity's max isn't lower than -1
-    for (const tile of tilesWith(block, glass)) {
-      for (const sprite of aboveTile) {
-        if (playerPosition.x == tile.x && playerPositon.y - 1 == tile.y) {
-          getFirst(player).y = 0;
-        }
+    // End of the "falling clipping player" bug fix //
+
+    jpb();
+    // ACCIDENTALLY DISCOVERED HOW TO DO STICKY SURFACES (like Spider-Man)
+    /*
+    const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
+    for (const sprite of oneAbove) {
+      if (sprite.type === sticky) {
+        velocity = 0;
+        break;
       }
     }
+    */
     
     let isSolidUnderPlayer = false;
     const oneBelow = getTile(getFirst(player).x, getFirst(player).y + 1);
@@ -94,13 +114,13 @@ setInterval(() => {
       }
     }
     //addText(`${isSolidUnderPlayer}`, { x: 8, y: 6, color: color`L` });
-    if (isSolidUnderPlayer || getFirst(player).y == floor) {
+    if (isSolidUnderPlayer || (getFirst(player).y == floor)) {
       velocity = 0; // Set velocity to zero to prevent clipping
       airborne = false; // Player can jump on platforms
     } else {
       airborne = true;
     }
-    addText(`${airborne}`, { x: 8, y: 6, color: color`5` });
+    addText(`airborne: ${airborne}`, { x: 3, y: 5, color: color`5` });
   }
 }, /* frame updates after */ 60 /* milliseconds */);
 
@@ -294,7 +314,7 @@ bb...bb..........
 .................
 bb.........gg....
 .................
-bb.............bb
+bb............bb.
 .........ss......`,
   playerPos: { x: 5, y: floor},
 }]
@@ -326,14 +346,17 @@ onInput("w", () => {
     velocity = -JUMPHEIGHT;
     airborne = true;
   }
+  jpb();
 });
 
 onInput("a", () => {
   getFirst(player).x -= 1;
+  jpb();
 });
 
 onInput("d", () => {
   getFirst(player).x += 1;
+  jpb();
 });
 
 // AFTERINPUT
