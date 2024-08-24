@@ -5,7 +5,6 @@
 @addedOn: 2024-08-10
 */
 
-
 // Tile Sprites
 const player = "p";
 const spike = "s";
@@ -24,7 +23,7 @@ let left = false;
 let right = false;
 const JUMPHEIGHT = 1.0;
 const GRAVITY = 0.25;
-let frameRate = 60;
+let frameRate = 1000;
 
 // Upside-Down Physics
 const gravitySwitch = "w";
@@ -66,6 +65,23 @@ setLegend(
 .LLLLLLLLLLLLLL.
 .LLLLLLLLLLLLLL.
 LLLLLLLLLLLLLLLL`],
+  [red, bitmap`
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333
+3333333333333333`],
   [block, bitmap`
 0000000000000000
 0000000010000000
@@ -247,9 +263,9 @@ setInterval(() => {
     }
 
     const playerPosition = getFirst(player); // Get the player sprite (for reference)
-    let targetY = getFirst(player).y + Math.floor(velocity);
+    let targetY = playerPosition.y + Math.floor(velocity);
     if (reverseGravity) {
-      targetY = getFirst(player).y + Math.ceil(velocity);
+      targetY = playerPosition.y + Math.ceil(velocity);
     }
     const targetTile = getTile(playerPosition.x, playerPosition.targetY); // Get the tile "below" the player
     
@@ -261,17 +277,25 @@ setInterval(() => {
         skippedTiles.push(getTile(playerPosition.x, scanY));
       }
     } else {
-      for (let i = 1; i <= Math.abs(Math.floor(velocity)); i++) {
-        const scanY = playerPosition.y - Math.sign(velocity) * i; // Adjust based on velocity direction
+      for (let i = 1; i <= Math.abs(Math.ceil(velocity)); i++) {
+        const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
         skippedTiles.push(getTile(playerPosition.x, scanY));
       }
     }
     // Identify the platform position for the player to land on
+    for (const tile of tilesWith(red)) {
+      for (const sprite of tile) {
+        if (sprite.type === red) {
+          sprite.remove();
+        }
+      }
+    }
     let platformY = null;
     for (const tile of skippedTiles) {
         for (const sprite of tile) {
             if (sprite.type === block || sprite.type === glass) {
                 platformY = sprite.y;
+                addSprite(getFirst(player).x, sprite.y, red);
                 break;
             }
         }
@@ -279,6 +303,7 @@ setInterval(() => {
             break; // Exit the loop if platform position is found
         }
     }
+    addText(`${platformY}`, { x: 6, y: 9, color: color`F` });
     if (!reverseGravity) {
       if (platformY !== null) {
         getFirst(player).y = platformY - 1; // Adjust as needed for player size
