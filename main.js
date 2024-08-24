@@ -585,9 +585,7 @@ setInterval(() => {
 const levels = [{
     name: "origin",
     left: "plains",
-    leftOffset: 0,
     right: "stairs",
-    rightOffset: 3,
     top: null,
     bottom: null,
     map: map`
@@ -652,7 +650,7 @@ bb............bb.
     name: "stairs",
     left: "origin",
     right: ["childrensGallery", "leapOfFaith"],
-    slice: 6,
+    rightSplit: 6,
     top: null,
     bottom: null,
     map: map`
@@ -743,45 +741,57 @@ function drawLevel(direction) {
   }
   let saveX = getFirst(player).x;
   let saveY = getFirst(player).y;
-  const originalHeight = height();
   console.log(`Saved coords: ${saveX}, ${saveY}  Direction: ${direction}`);
   if (direction === "left") {
-    const offset = levels[currentLevel].leftOffset;
-    // Going there
-    currentLevel = convertToIndex(levels[currentLevel].left);
-    // TODO: rework this into the left version; this is the right version
-    const difference = originalHeight - height();
-    const testY = saveY - (difference - offset);
-    setMap(levels[currentLevel].map);
-    resetFloor();
-    if (testY <= floor && testY >= 0) {
-      // Spawning the player if it has a valid coordinate
-      addSprite(0, testY, player);
-    } else {
-      // Moving back if it isn't valid
+    if (!Array.isArray(levels[currentLevel].left)) {
       currentLevel = convertToIndex(levels[currentLevel].left);
+      setMap(levels[currentLevel].map);
+      // unnecessary but just in case
+      resetFloor();
+      addSprite(width() - 1, saveY, player);
+      return;
+    }
+    const orginalSaveY = saveY; // If the player is out of bounds
+    const orginalLevel = currentLevel; // Also if the player is out of bounds
+    const split = levels[currentLevel].leftSplit;
+    if (saveY >= split) {
+      const originalHeight = (split + 1);
+      currentLevel = convertToIndex(levels[currentLevel].left[0]);
+      setMap(levels[currentLevel].map);
+      saveY += (height - originalHeight);
+    } else {
+      saveY -= split + 1;
+    }
+    resetFloor();
+    if (saveY < 0 || saveY > floor) {
+      currentLevel = convertToIndex(levels[originalLevel].left[0]);
       setMap(levels[currentLevel].map);
       resetFloor();
       addSprite(width() - 1, saveY, player);
     }
+    addSprite(width() - 1, saveY, player);
   } else if (direction === "right") {
-    const offset = levels[currentLevel].rightOffset;
-    // Going there
-    currentLevel = convertToIndex(levels[currentLevel].right);
-    const difference = originalHeight - height();
-    const testY = saveY - (difference - offset);
-    setMap(levels[currentLevel].map);
-    resetFloor();
-    if (testY <= floor && testY >= 0) {
-      // Spawning the player if it has a valid coordinate
-      addSprite(0, testY, player);
-    } else {
-      // Moving back if it isn't valid
-      currentLevel = convertToIndex(levels[currentLevel].left);
+    if (!Array.isArray(levels[currentLevel].right)) {
+      currentLevel = convertToIndex(levels[currentLevel].right);
       setMap(levels[currentLevel].map);
+      // unnecessary but just in case
       resetFloor();
       addSprite(width() - 1, saveY, player);
+      return;
     }
+    const split = levels[currentLevel].rightSplit;
+    if (saveY >= split) {
+      let originalHeight = (split + 1);
+      currentLevel = convertToIndex(levels[currentLevel].right[0]);
+      setMap(levels[currentLevel].map);
+      saveY += (height - originalHeight);
+    } else {
+      currentLevel = convertToIndex(levels[currentLevel].right[1]);
+      setMap(levels[currentLevel].map);
+      saveY -= split + 1;
+    }
+    resetFloor();
+    addSprite(width() - 1, saveY, player);
   } else if (direction === "top") {
     currentLevel = convertToIndex(levels[currentLevel].top);
     setMap(levels[currentLevel].map);
