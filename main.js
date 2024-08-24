@@ -207,7 +207,7 @@ function jpb() {
   if (!reverseGravity) {
     const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
     for (const sprite of oneAbove) {
-      if (sprite.type === block || sprite.type === glass || levels[currentLevel].top === null) {
+      if (sprite.type === block || sprite.type === glass) {
         if (velocity == 0 || velocity == 0.25) {
           // Just passing in
           break;
@@ -221,7 +221,7 @@ function jpb() {
   } else {
     const oneBelow = getTile(getFirst(player).x, getFirst(player).y + 1);
     for (const sprite of oneBelow) {
-      if (sprite.type === block || sprite.type === glass || levels[currentLevel].bottom === null) {
+      if (sprite.type === block || sprite.type === glass) {
         if (velocity == 0 || velocity == -0.25) {
           break;
         } else {
@@ -276,7 +276,12 @@ setInterval(() => {
         // Higher scrolling
         drawLevel("top");
         targetY = floor - 1;
-      } else if (playerPosition.y == floor && velocity >= 0 && levels[currentLevel].bottom !== null) {
+      } else if (targetY == -1) {
+        // Hitting the ceiling
+        velocity = 1;
+      }
+      let readyToFall = (playerPosition.y == floor && velocity >= 0 && levels[currentLevel].bottom !== null);
+      if (readyToFall && ) {
         // Lower scrolling
         drawLevel("bottom");
         targetY = 0;
@@ -287,12 +292,17 @@ setInterval(() => {
         // Lower scrolling
         drawLevel("bottom");
         targetY = floor;
-      } else if (playerPosition.y == 0 && velocity <= 0 && levels[currentLevel].top !== null) {
+      } else if (targetY == height()) {
+        // Hitting the "ceiling"
+        velocity = -1;
+      }
+      if (playerPosition.y == 0 && velocity <= 0 && levels[currentLevel].top !== null) {
         // Higher scrolling
         drawLevel("top");
         targetY = 1;
       }
     }
+    addText(`ready2fall: ${readyToFall}`, { x: 3, y: 9, color: color`9` });
     
     // Start of the "falling clipping player" bug fix //
     const skippedTiles = [];
@@ -464,7 +474,7 @@ bb............bb.
     left: null,
     right: "start",
     top: null,
-    bottom: null,
+    bottom: "belowRuins",
     map: map`
 ......b..........
 .......b.........
@@ -506,6 +516,27 @@ bbbb.............
 .................
 ....bbb..........`,
     spawnPos: {x: 5, y: 12}
+  },
+  {
+    name: "belowRuins",
+    left: null,
+    right: null,
+    top: "ruins",
+    bottom: null,
+    map: map`
+bb..bb....bb..bbb
+.................
+...b........b....
+..............bb.
+......bbb........
+..gggb..........b
+..b.........bbb..
+...........bb....
+.........bbb.....
+........bb.......
+.................
+.................`,
+    spawnPos: {x: 10, y: 7}
   }
 ]
 
