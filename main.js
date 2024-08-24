@@ -33,26 +33,50 @@ setInterval(() => {
     addText(`${velocity}`, { x: 8, y: 3, color: color`5` });
     addText(`${airborne}`, { x: 8, y: 6, color: color`5` });
 
-    let playerX = getFirst(player).x; // Get the player sprite (for editing)
-    let playerY = getFirst(player).y; // Get the player sprite (for editing)
-    
+    // Falling
     velocity += GRAVITY;
-    /* 
-    Mininum function to make sure the velocity doesn't freeze the player middair because the (playerY + velocity)
-    is greater than the floor i.e. 16
-    */
-    const targetY = getFirst(player).y + Math.floor(velocity);
-    getFirst(player).y = Math.min(targetY, floor);
-
+    const targetY = getFirst(player).y + velocity
+    
     const playerPosition = getFirst(player); // Get the player sprite (for reference)
+    const skippedTilesBelow = [];
+    for (let i = 1; i <= Math.abs(Math.floor(velocity)); i++) {
+      const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
+      skippedTilesBelow.push(getTile(playerPosition.x, scanY));
+    }
+
+    // Identify the platform position for the player to land on
+    let platformY = null;
+    for (const tile of skippedTilesBelow) {
+        for (const sprite of tile) {
+            if (sprite.type === block || sprite.type === glass) {
+                platformY = sprite.y;
+                break;
+            }
+        }
+        if (platformY !== null) {
+            break; // Exit the loop if platform position is found
+        }
+    }
+
+    if (platformY !== null) { 
+      getFirst(player).y = Math.min(platformY - 1, floor); // Adjust as needed for player size
+    } else {
+      /* 
+      Mininum function to make sure the velocity doesn't freeze the player middair because the (playerY + velocity)
+      is greater than the floor i.e. 16
+      */
+      const targetY = getFirst(player).y + Math.floor(velocity);
+      getFirst(player).y = Math.min(targetY, floor);
+    }
+
     const targetTile = getTile(playerPosition.x, playerPosition.targetY); // Get the tile "below" the player
-    const skippedTilesBelow = getTile(playerPosition.x, playerPosition.y + 1); // Get the tiles skipped to check for platforms that shouldn't be clipped through
+    addText(`${targetTile.x}, ${targetTile.y}`, { x: 2, y: 5, color: color`5` });
     let isSolidUnderPlayer = false;
     for (const sprite of targetTile) {
       if (sprite.type === block || sprite.type === glass) {
         isSolidUnderPlayer = true;
         velocity = 0; // Set velocity to zero to prevent clipping
-        airborne = false;
+        airborne = false; // Player can jump on platforms
         break;
       }
     }
