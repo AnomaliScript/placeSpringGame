@@ -614,9 +614,19 @@ setInterval(() => {
       addText(`${justEntered}`, { x: 3, y: 11, color: color`8` });
     } else if (debugMode == 2) {
       addText("mode: scrolling", { x: 3, y: 15, color: color`D` });
-      addText(`linear: ${!Array.isArray(levels[currentLevel].right)}`, { x: 5, y: 3, color: color`7` });
-      addText(`linear: ${!Array.isArray(levels[currentLevel].left)}`, { x: 3, y: 1, color: color`5` });
       addText(`save coords: ${getFirst(player).x}, ${getFirst(player).y}`, { x: 1, y: 5, color: color`L` });
+      if (Array.isArray(levels[currentLevel].left)) {
+        addText(`${levels[currentLevel].left[0]}`, { x: 3, y: 7, color: color`C` });
+        addText(`${levels[currentLevel].left[1]}`, { x: 3, y: 9, color: color`C` });
+      } else {
+        addText(`${levels[currentLevel].left}`, { x: 3, y: 7, color: color`C` });
+      }
+      if (Array.isArray(levels[currentLevel].right)) {
+        addText(`${levels[currentLevel].right[0]}`, { x: 3, y: 11, color: color`F` });
+        addText(`${levels[currentLevel].right[1]}`, { x: 3, y: 13, color: color`F` });
+      } else {
+        addText(`${levels[currentLevel].right}`, { x: 3, y: 11, color: color`F` });
+      }
       if ('leftSplit' in levels[currentLevel]) {
         addSprite(0, levels[currentLevel].leftSplit, leftArrow);
       }
@@ -652,7 +662,7 @@ bb.........gg....
 .................
 bb............bb.
 .........ss......`,
-    spawnPos: { x: 5, y: floor },
+    spawnPos: {x: 5, y: floor},
     /*
     topPlat is all of the x-coords that the player cannot enter the "top" level in
     It references the blocks from "top" level but the values are hard-coded and stored 
@@ -689,7 +699,7 @@ bb............bb.
 ................
 ................
 ........ssssssss`,
-    spawnPos: { x: 2, y: floor },
+    spawnPos: {x: 2, y: floor},
     topPlat: [],
     bottomPlat: []
   },
@@ -702,26 +712,27 @@ bb............bb.
     top: null,
     bottom: null,
     map: map`
-....b.....bbb...
-..b.......g.g...
+......b...bbb...
+...b......g.g...
 b.........gdg...
-....b.....bbb...
-..b...........b.
-b...........b...
-....b.....b.....
-..b.....b.....b.
-......b.....b...
-....b.....b.....
-..b.....b.....b.
-......b.....b...
-....b.....b.....`,
-    spawnPos: { x: 2, y: floor },
+.......b..bbb...
+....b.........b.
+.b.........b....
+........b.......
+.....b.........b
+..b.........b...
+.........b......
+......b.........
+...b.........b..
+..........b.....`,
+    spawnPos: {x: 2, y: floor},
     topPlat: [],
     bottomPlat: []
   },
   {
     name: "childrensGallery",
-    left: "stairs",
+    left: [null, "stairs"],
+    leftSplit: 6,
     right: "exhibit",
     top: null,
     bottom: null,
@@ -739,34 +750,35 @@ g..bbb..g..
 ...........
 ......bb...
 ...bb....bb`,
-    spawnPos: { x: 2, y: floor },
+    spawnPos: {x: 2, y: floor},
     topPlat: [],
     bottomPlat: []
   },
   {
     name: "leapOfFaith",
-    left: "stairs",
+    left: ["stairs", null],
+    leftSplit: 6,
     right: "darkroom",
     top: null,
     bottom: "creation",
     map: map`
-................
-................
-................
-................
-................
-................
-................
-................
-................
-................
-................
-................
-................
-................
-................
-................`,
-    spawnPos: { x: 2, y: floor },
+...........................
+...........................
+...........................
+...........................
+...........................
+............sss............
+............bbb............
+...........................
+bbbbbb...............bbbbbb
+...........................
+...........................
+...........................
+...........................
+...........................
+...........................
+...........................`,
+    spawnPos: {x: 2, y: floor},
     topPlat: [],
     bottomPlat: []
   }
@@ -790,8 +802,8 @@ function drawLevel(direction) {
   let saveX = getFirst(player).x;
   let saveY = getFirst(player).y;
   console.log(`Saved coords: ${saveX}, ${saveY}  Direction: ${direction}`);
-  if (direction === "left") { ////////////////////Left case//////////////////////////////////////////////
-    if (!Array.isArray(levels[currentLevel].left)) { // Linear/straightforward csae
+  if (direction === "left") { ////////////////////Left case///////////////////////
+    if (!Array.isArray(levels[currentLevel].left)) { // Linear/straightforward case
       currentLevel = convertToIndex(levels[currentLevel].left);
       setMap(levels[currentLevel].map);
       // unnecessary but just in case
@@ -799,10 +811,10 @@ function drawLevel(direction) {
       addSprite(width() - 1, saveY, player);
       return;
     }
-    const originalSaveY = saveY; // If the player is out of bounds
-    const originalLevel = currentLevel; // Also if the player is out of bounds
+    const originalSaveY = saveY; // For the player to go back to if the player is out of bounds
+    const originalLevel = currentLevel; // Also for the player to go back to if the player is out of bounds
     const split = levels[currentLevel].leftSplit;
-    if (saveY >= split) {
+    if (saveY <= split) {
       // Checking for "splits" without a second level; that's how I make adjecent levels with height offsets
       if (levels[currentLevel].left[0] === null) {
         return;
@@ -815,7 +827,7 @@ function drawLevel(direction) {
       if (levels[currentLevel].left[1] === null) {
         return;
       }
-      currentLevel = convertToIndex(levels[currentLevel].left[0]);
+      currentLevel = convertToIndex(levels[currentLevel].left[1]);
       setMap(levels[currentLevel].map);
       saveY -= split + 1;
     }
@@ -828,7 +840,7 @@ function drawLevel(direction) {
     }
     addSprite(width() - 1, saveY, player);
   } else if (direction === "right") { /////////////////////////Right case//////////////////////////
-    if (!Array.isArray(levels[currentLevel].right)) { // Linear/straightforward csae
+    if (!Array.isArray(levels[currentLevel].right)) { // Linear/straightforward case
       currentLevel = convertToIndex(levels[currentLevel].right);
       setMap(levels[currentLevel].map);
       // unnecessary but just in case
@@ -836,8 +848,10 @@ function drawLevel(direction) {
       addSprite(0, saveY, player);
       return;
     }
-    const originalSaveY = saveY; // If the player is out of bounds
-    const originalLevel = currentLevel; // Also if the player is out of bounds
+    const originalSaveY = saveY; // Shallow copy of saveY
+    const originalLevel = currentLevel; // Shallow copy of currentLevel
+    //const originalSaveY = saveY; // If the player is out of bounds
+    //const originalLevel = currentLevel; // Also if the player is out of bounds
     const split = levels[currentLevel].rightSplit;
     if (saveY <= split) {
       // Checking for "splits" without a second level; that's how I make adjecent levels with height offsets
@@ -852,7 +866,7 @@ function drawLevel(direction) {
       if (levels[currentLevel].right[1] === null) {
         return;
       }
-      currentLevel = convertToIndex(levels[currentLevel].right[0]);
+      currentLevel = convertToIndex(levels[currentLevel].right[1]);
       setMap(levels[currentLevel].map);
       saveY -= split + 1;
     }
@@ -862,6 +876,16 @@ function drawLevel(direction) {
       setMap(levels[currentLevel].map);
       resetFloor();
       addSprite(0, originalSaveY, player);
+    }
+    for (const sprite of getTile(width() - 1, saveY)) {
+      if (sprite.type === block || sprite.type === glass) {
+        console.log("you're getting sent back!");
+        currentLevel = convertToIndex(levels[originalLevel]);
+        setMap(levels[currentLevel].map);
+        resetFloor();
+        addSprite(0, originalSaveY, player);
+        return;
+      }
     }
     addSprite(0, saveY, player);
   } else if (direction === "top") {
@@ -944,7 +968,7 @@ onInput("l", () => {
   //jpb();
 });
 
-// i cases (like e in roblox, "i" in this game is the "use" key)
+// i cases
 // gravity switch
 function gravitySwitching() {
   if (true) /*ability condition to be here soon*/ {
