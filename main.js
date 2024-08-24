@@ -232,7 +232,10 @@ setInterval(() => {
     }
 
     const playerPosition = getFirst(player); // Get the player sprite (for reference)
-    const targetY = getFirst(player).y + Math.floor(velocity);
+    let targetY = getFirst(player).y + Math.floor(velocity);
+    if (reverseGravity) {
+      targetY = getFirst(player).y + Math.ceil(velocity);
+    }
     const targetTile = getTile(playerPosition.x, playerPosition.targetY); // Get the tile "below" the player
     
     // Start of the "falling clipping player" bug fix //
@@ -262,14 +265,10 @@ setInterval(() => {
         }
     }
     if (!reverseGravity) {
-      if (platformY !== null) { 
+      if (platformY !== null) {
         getFirst(player).y = platformY - 1; // Adjust as needed for player size
         velocity = 0;
       } else {
-        /* 
-        Mininum function to make sure the velocity doesn't freeze the player middair because the (playerY + velocity)
-        is greater than the floor i.e. 15
-        */
         getFirst(player).y = Math.min(targetY, floor);
       }
     } else {
@@ -277,15 +276,12 @@ setInterval(() => {
         getFirst(player).y = platformY + 1; // Adjust as needed for player size
         velocity = 0;
       } else {
-        /* 
-        Mininum function to make sure the velocity doesn't freeze the player middair because the (playerY + velocity)
-        is greater than the top i.e. 0
-        */
-        getFirst(player).y = Math.min(targetY, 0);
+        getFirst(player).y = Math.max(targetY, 0);
       }
     }
     // End of the "falling clipping player" bug fix //
-
+    addText(`${targetY}`, { x: 8, y: 9, color: color`L` });
+    
     jpb();
     // ACCIDENTALLY DISCOVERED HOW TO DO STICKY SURFACES (like Spider-Man)
     /*
@@ -297,7 +293,6 @@ setInterval(() => {
       }
     }
     */
-
     let isSolidNearPlayer = false;
     if (!reverseGravity) {
       const oneBelow = getTile(getFirst(player).x, getFirst(player).y + 1);
@@ -316,10 +311,10 @@ setInterval(() => {
         }
       }
     }
-    //addText(`${isSolidUnderPlayer}`, { x: 8, y: 6, color: color`L` });
+    addText(`${isSolidNearPlayer}`, { x: 8, y: 7, color: color`L` });
 
     // airborne logic
-    if (isSolidNearPlayer || (getFirst(player).y == floor) || (reverseGravity && getFirst(player).y == 0)) {
+    if (isSolidNearPlayer || (!reverseGravity && getFirst(player).y == floor) || (reverseGravity && getFirst(player).y == 0)) {
       velocity = 0;
       airborne = false; // Player can jump on platforms
     } else {
