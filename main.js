@@ -183,6 +183,7 @@ jump platform bug (jpb) bugfix, I need to make this a function in order to not h
 to jump "onto blocks" and to also make sure the player was not able to bypass 
 the original bugfix (which was originally only in setInterval(), now it's in both in that and the input functions)
 */
+let flag = false;
 function jpb() {
   // Prevent the player from "jumping onto" blocks
   // No need to "scan" tiles compared to falling because velocity's max isn't lower than -1
@@ -191,6 +192,7 @@ function jpb() {
     for (const sprite of oneAbove) {
       if (sprite.type === block || sprite.type === glass) {
         velocity = 1;
+        flag = true;
         break;
       }
     }
@@ -199,6 +201,7 @@ function jpb() {
     for (const sprite of oneBelow) {
       if (sprite.type === block || sprite.type === glass) {
         velocity = -1;
+        flag = true;
         break;
       }
     }
@@ -280,9 +283,9 @@ setInterval(() => {
       }
     }
     // End of the "falling clipping player" bug fix //
-    addText(`${targetY}`, { x: 8, y: 9, color: color`L` });
+    addText(`${targetY}`, { x: 3, y: 9, color: color`H` });
     
-    jpb();
+    
     // ACCIDENTALLY DISCOVERED HOW TO DO STICKY SURFACES (like Spider-Man)
     /*
     const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
@@ -311,8 +314,12 @@ setInterval(() => {
         }
       }
     }
-    addText(`${isSolidNearPlayer}`, { x: 8, y: 7, color: color`L` });
+    addText(`${isSolidNearPlayer}`, { x: 3, y: 7, color: color`L` });
 
+    flag = false;
+    jpb();
+    addText(`${flag}`, { x: 3, y: 11, color: color`3` });
+    
     // airborne logic
     if (isSolidNearPlayer || (!reverseGravity && getFirst(player).y == floor) || (reverseGravity && getFirst(player).y == 0)) {
       velocity = 0;
@@ -400,7 +407,7 @@ w..b...........g.
 ..b.......b...g..
 .....d.....b.g...
 b....bd.....b....
-......b.....g....
+.b....b.....g....
 ..b....b....b.d..
 ...b.......b..b..
 ....b.....b......
@@ -471,8 +478,8 @@ onInput("s", () => {
       velocity = JUMPHEIGHT;
       airborne = true;
     }
-    jpb();
   }
+  jpb();
 });
 
 onInput("d", () => {
