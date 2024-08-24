@@ -31,7 +31,6 @@ let justEntered = false;
 let frameRate = 60;
 
 // Upside-Down Physics
-const gravitySwitch = "w";
 let reverseGravity = false;
 
 /*✧･ﾟ: *✧･ﾟ:* Textures! ✧･ﾟ: *✧･ﾟ:*/
@@ -155,23 +154,6 @@ LLLLLLLLLLLLLLLL`],
 1CCC1C1CCC11CCC1
 1CCC1C1CCC1C1CC1
 1111111111111111`],
-  [gravitySwitch, bitmap`
-................
-....4...........
-.....444........
-......444.......
-...444.4..444...
-..4...4.....44..
-..4..4.......4..
-..4..........4..
-..4.......4..4..
-..44.....44..4..
-...44....4.44...
-....444..44.....
-......4...4444..
-................
-................
-................`],
   [door, bitmap`
 ................
 ................
@@ -289,7 +271,7 @@ function verticalScrolling() {
         offset = targetY - (floor - playerPosition.y);
         drawLevel("bottom");
       }
-      platformY = calculatePlatform(getSkippedTiles());
+      calculatePlatform(getSkippedTiles());
       targetY = 0 + offset;
       return;
     }
@@ -347,21 +329,18 @@ function getSkippedTiles() {
 
 // Calculate if there is a platform to land on
 function calculatePlatform(allTiles) {
-  let platformYCoord = null;
   for (const tile of allTiles) {
     for (const sprite of tile) {
       if (sprite.type === block || sprite.type === glass) {
         // console.log(`${sprite.x}, ${sprite.y}`);
-        platformYCoord = sprite.y;
+        platformY = sprite.y;
         // addSprite(getFirst(player).x, sprite.y, red);
-        break;
-      }
-      if (platformYCoord !== null) {
-        break; // Exit the loop if platform position is found
+        return;
       }
     }
   }
-  return platformYCoord;
+  platformY = null;
+  return;
 }
 
 // Determine if there is a block on top of the the player
@@ -416,26 +395,23 @@ setInterval(() => {
 
     // Setting player "targets" to move to next frame (doesn't actually move yet)
     const playerPosition = getFirst(player); // Get the player sprite (for reference)
-    let targetY = playerPosition.y + Math.floor(velocity);
+    targetY = playerPosition.y + Math.floor(velocity);
     if (reverseGravity) {
       targetY = playerPosition.y + Math.ceil(velocity);
     }
-    const targetTile = getTile(playerPosition.x, playerPosition.targetY); // Get the tile "below" the player
-
-    const skippedTiles = getSkippedTiles();
 
     // Identify the platform position for the player to land on
     /* for (const tile of tilesWith(red)) {
       for (const sprite of tile) {
-        if (sprite.type === red) {
+        if (sprite.type === red) {i
           sprite.remove();
         }
       }
     } */
-    platformY = calculatePlatform(skippedTiles);
+    calculatePlatform(getSkippedTiles());
     
     // Vertical Scrolling! (CONTROL THE targetY AT ALL COSTS)
-    verticalScrolling(targetY);
+    verticalScrolling();
     // jpb is only for active/"jumping" movement
     jpb();
 
@@ -589,7 +565,7 @@ bb............bb.
 ......b..........
 .......b.........
 ....b...b........
-w..b...........g.
+...b...........g.
 ..b.......b...g..
 .....d.....b.g...
 b....bd.....b....
@@ -600,7 +576,7 @@ b....bd.....b....
 .................
 .....bb.bb.......
 .bbbb..b.........
-..........w......
+.................
 .................`,
     spawnPos: { x: 12, y: floor },
     topPlat: [],
@@ -620,7 +596,7 @@ b....bd.....b....
 .....b....sss....
 ....b.....bbb....
 ..........g.b.s..
-s...bbb...gwb.bb.
+s...bbb...g.b.bb.
 bbb.......bbb....
 ..g..............
 d.g....bbb.......
