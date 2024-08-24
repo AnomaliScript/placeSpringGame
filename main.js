@@ -8,15 +8,17 @@ https://sprig.hackclub.com/gallery/getting_started
 @addedOn: 2024-08-10
 */
 
-// Static stuff
+// Tile Sprites
 const floor = 16;
 const player = "p";
 const spike = "s";
+const red = "e";
 const block = "b";
 const glass = "g";
 const glassBroken = "r";
 const crate = "c";
 const door = "d";
+const spawn = "a";
 
 // Physics Variables
 let velocity = 0;
@@ -25,104 +27,6 @@ var left = false;
 var right = false;
 const JUMPHEIGHT = 1.0;
 const GRAVITY = 0.25;
-
-/*
-jump platform bug (jpb) bugfix, I need to make this a function in order to not have the player be able
-to jump "onto blocks" and to also make sure the player was not able to bypass 
-the original bugfix (which was originally only in setInterval(), now it's in both in that and the input functions)
-*/
-function jpb() {
-  // Prevent the player from "jumping onto" blocks
-  // No need to "scan" tiles compared to falling because velocity's max isn't lower than -1
-  const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
-  for (const sprite of oneAbove) {
-    if (sprite.type === block || sprite.type === glass) {
-      velocity = 1;
-      break;
-    }
-  }
-}
-
-// Gravity
-setInterval(() => {
-  if (game.isRunning()) {
-    
-    // troubleshooting addText stuff
-    clearText();
-    addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 3, y: 1, color: color`5`}); // Display the player coordinates
-    addText(`${velocity}`, { x: 3, y: 3, color: color`D` });
-    
-    // Falling
-    velocity += GRAVITY;
-
-    const playerPosition = getFirst(player); // Get the player sprite (for reference)
-    const targetY = getFirst(player).y + Math.floor(velocity);
-    const targetTile = getTile(playerPosition.x, playerPosition.targetY); // Get the tile "below" the player
-    
-    // Start of the "falling clipping player" bug fix //
-    const skippedTilesBelow = [];
-    for (let i = 1; i <= Math.abs(Math.floor(velocity)); i++) {
-      const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
-      skippedTilesBelow.push(getTile(playerPosition.x, scanY));
-    }
-    
-    // Identify the platform position for the player to land on
-    let platformY = null;
-    for (const tile of skippedTilesBelow) {
-        for (const sprite of tile) {
-            if (sprite.type === block || sprite.type === glass) {
-                platformY = sprite.y;
-                break;
-            }
-        }
-        if (platformY !== null) {
-            break; // Exit the loop if platform position is found
-        }
-    }
-    
-    if (platformY !== null) { 
-      getFirst(player).y = platformY - 1; // Adjust as needed for player size
-      velocity = 0;
-    } else {
-      /* 
-      Mininum function to make sure the velocity doesn't freeze the player middair because the (playerY + velocity)
-      is greater than the floor i.e. 16
-      */
-      getFirst(player).y = Math.min(targetY, floor);
-    }
-    
-    // End of the "falling clipping player" bug fix //
-
-    jpb();
-    // ACCIDENTALLY DISCOVERED HOW TO DO STICKY SURFACES (like Spider-Man)
-    /*
-    const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
-    for (const sprite of oneAbove) {
-      if (sprite.type === sticky) {
-        velocity = 0;
-        break;
-      }
-    }
-    */
-    
-    let isSolidUnderPlayer = false;
-    const oneBelow = getTile(getFirst(player).x, getFirst(player).y + 1);
-    for (const sprite of oneBelow) {
-      if (sprite.type === block || sprite.type === glass) {
-        isSolidUnderPlayer = true;
-        break;
-      }
-    }
-    //addText(`${isSolidUnderPlayer}`, { x: 8, y: 6, color: color`L` });
-    if (isSolidUnderPlayer || (getFirst(player).y == floor)) {
-      velocity = 0; // Set velocity to zero to prevent clipping
-      airborne = false; // Player can jump on platforms
-    } else {
-      airborne = true;
-    }
-    addText(`airborne: ${airborne}`, { x: 3, y: 5, color: color`5` });
-  }
-}, /* frame updates after */ 60 /* milliseconds */);
 
 // Upside-down B)
 const gravitySwitch = "w";
@@ -284,7 +188,24 @@ LLLLLLLLLLLLLLLL`],
 ...CCCCCCCCCCCC.
 ....CCCCCCCCCCC.
 ....CCCCCCCCCCC.
-....CCCCCCCCCCC.`]
+....CCCCCCCCCCC.`],
+  [spawn, bitmap`
+................
+................
+................
+................
+................
+................
+................
+................
+................
+................
+................
+................
+................
+................
+................
+................`]
 )
 
 // Solids
@@ -295,9 +216,118 @@ setPushables({
   [player]: [crate]
 })
 
+/*
+jump platform bug (jpb) bugfix, I need to make this a function in order to not have the player be able
+to jump "onto blocks" and to also make sure the player was not able to bypass 
+the original bugfix (which was originally only in setInterval(), now it's in both in that and the input functions)
+*/
+function jpb() {
+  // Prevent the player from "jumping onto" blocks
+  // No need to "scan" tiles compared to falling because velocity's max isn't lower than -1
+  const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
+  for (const sprite of oneAbove) {
+    if (sprite.type === block || sprite.type === glass) {
+      velocity = 1;
+      break;
+    }
+  }
+}
+
+// Gravity
+setInterval(() => {
+  if (game.isRunning()) {
+    
+    // troubleshooting addText stuff
+    clearText();
+    addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 3, y: 1, color: color`5`}); // Display the player coordinates
+    addText(`${velocity}`, { x: 3, y: 3, color: color`D` });
+    
+    // Falling
+    velocity += GRAVITY;
+
+    const playerPosition = getFirst(player); // Get the player sprite (for reference)
+    const targetY = getFirst(player).y + Math.floor(velocity);
+    const targetTile = getTile(playerPosition.x, playerPosition.targetY); // Get the tile "below" the player
+    
+    // Start of the "falling clipping player" bug fix //
+    const skippedTilesBelow = [];
+    for (let i = 1; i <= Math.abs(Math.floor(velocity)); i++) {
+      const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
+      skippedTilesBelow.push(getTile(playerPosition.x, scanY));
+    }
+    
+    // Identify the platform position for the player to land on
+    let platformY = null;
+    for (const tile of skippedTilesBelow) {
+        for (const sprite of tile) {
+            if (sprite.type === block || sprite.type === glass) {
+                platformY = sprite.y;
+                break;
+            }
+        }
+        if (platformY !== null) {
+            break; // Exit the loop if platform position is found
+        }
+    }
+    
+    if (platformY !== null) { 
+      getFirst(player).y = platformY - 1; // Adjust as needed for player size
+      velocity = 0;
+    } else {
+      /* 
+      Mininum function to make sure the velocity doesn't freeze the player middair because the (playerY + velocity)
+      is greater than the floor i.e. 16
+      */
+      getFirst(player).y = Math.min(targetY, floor);
+    }
+    
+    // End of the "falling clipping player" bug fix //
+
+    jpb();
+    // ACCIDENTALLY DISCOVERED HOW TO DO STICKY SURFACES (like Spider-Man)
+    /*
+    const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
+    for (const sprite of oneAbove) {
+      if (sprite.type === sticky) {
+        velocity = 0;
+        break;
+      }
+    }
+    */
+    
+    let isSolidUnderPlayer = false;
+    const oneBelow = getTile(getFirst(player).x, getFirst(player).y + 1);
+    for (const sprite of oneBelow) {
+      if (sprite.type === block || sprite.type === glass) {
+        isSolidUnderPlayer = true;
+        break;
+      }
+    }
+    //addText(`${isSolidUnderPlayer}`, { x: 8, y: 6, color: color`L` });
+    if (isSolidUnderPlayer || (getFirst(player).y == floor)) {
+      velocity = 0; // Set velocity to zero to prevent clipping
+      airborne = false; // Player can jump on platforms
+    } else {
+      airborne = true;
+    }
+    addText(`airborne: ${airborne}`, { x: 3, y: 5, color: color`5` });
+
+    // DEATH CASES :skull:
+    let spikes = getAll(spike);
+    for (let i = 0; i < spikes.length; i++) {
+      if (playerPosition.x == spikes[i].x && playerPosition.y == spikes[i].y) {
+        getFirst(player).x = levels[currentLevel].spawnPos.x;
+        getFirst(player).y = levels[currentLevel].spawnPos.y;
+        addText("you died :(", { x: 3, y: 6, scale: 0.5, color: color`0`});
+      }
+    }
+  }
+}, /* frame updates after */ 60 /* milliseconds */);
+
 // Maps/levels
-let level = 0
+let level = 0;
 const levels = [{
+  name: "beginning",
   map: map`
 .................
 .................
@@ -317,9 +347,10 @@ bb.........gg....
 bb............bb.
 .........ss......`,
   playerPos: { x: 5, y: floor},
+  spawnPos: { x: 5, y: floor}
 }]
 
-let currentLevel = 0;
+var currentLevel = 0;
 
 const drawLevel = (levelIndex) => {
   const level = levels[levelIndex];
@@ -359,6 +390,18 @@ onInput("d", () => {
   jpb();
 });
 
+onInput("i", () => {
+  for (const tile in getTiles(door)) {
+    for (const sprite in tile) {
+      if (getFirst(player).x == sprite.x && getFirst(player).y == sprite.y) {
+        currentLevel += 1;
+        drawLevel(currentLevel);
+      }
+    }
+  }
+  //jpb();
+});
+
 // AFTERINPUT
 afterInput(() => {
   
@@ -374,12 +417,14 @@ afterInput(() => {
     addText(`${velocity}`, { x: 8, y: 3, color: color`5` }); */
   }
 
-  // Spike death check
-  let spikes = getAll(spike);
-  for (let i = 0; i < spikes.length; i++) {
-    if (playerPosition.x == spikes[i].x && playerPosition.y == spikes[i].y) {
-      // TODO: Add death cases
-      addText("you died :(", { x: 3, y: 6, scale: 0.5, color: color`0`});
+  // Surveillence death check (movement = death, but not if you're falling; act "dead")
+  /*
+  let reds = getAll(red);
+  for (let i = 0; i < reds.length; i++) {
+    if (playerPosition.x == reds[i].x && playerPosition.y == reds[i].y) {
+      getFirst(player).x = levels[currentLevel].spawnPos.x;
+      getFirst(player).y = levels[currentLevel].spawnPos.y;
     }
   }
+  */
 })
