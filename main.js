@@ -24,6 +24,7 @@ let right = false;
 const JUMPHEIGHT = 1.0;
 const GRAVITY = 0.25;
 let readyToFall = false;
+let readyToRise = false;
 let frameRate = 60;
 
 // Upside-Down Physics
@@ -254,7 +255,7 @@ function verticalScrolling(targetYClone) {
     if (levels[currentLevel].bottomPlat.includes(playerPosition.x)) {
       readyToFall = false;
     }
-    console.log(`falling: ${readyToFall}`);
+    addText(`falling: ${readyToFall}`, {x: 3, y: 9, color: color`8`});
     if (readyToFall) {
       readyToFall = false;
       drawLevel("bottom");
@@ -265,15 +266,23 @@ function verticalScrolling(targetYClone) {
     if (targetYClone == height() && levels[currentLevel].bottom !== null) {
       // Lower scrolling
       drawLevel("bottom");
-      return floor;
+      return 1;
     } else if (targetYClone == height()) {
       // Hitting the "ceiling"
       velocity = -1;
     }
+    // Higher scrolling
     if (playerPosition.y == 0 && velocity <= 0 && levels[currentLevel].top !== null) {
-      // Higher scrolling
+      readyToRise = true;
+    }
+    if (levels[currentLevel].topPlat.includes(playerPosition.x)) {
+      readyToRise = false;
+    }
+    addText(`falling: ${readyToRise}`, {x: 2, y: 11, color: color`F`});
+    if (readyToRise) {
+      readyToRise = false;
       drawLevel("top");
-      return 1;
+      return floor() - 1;
     }
   }
   return targetYClone;
@@ -423,19 +432,21 @@ setInterval(() => {
     }
     */
 
-    let isSolidNearPlayer = determineIfIsSolidNearPlayer();
-    addText(`${isSolidNearPlayer}`, { x: 3, y: 5, color: color`L` });
+    // The diisnp function accounts for both gravity cases
+    addText(`${determineIfIsSolidNearPlayer()}`, { x: 3, y: 5, color: color`L` });
 
     flag = false;
     jpb();
     addText(`flag: ${flag}`, { x: 3, y: 7, color: color`3` });
     
     // airborne logic
-    const regularCase = !readyToFall && !reverseGravity && getFirst(player).y == floor && velocity >= 0;
-    if (isSolidNearPlayer || regularCase || (reverseGravity && getFirst(player).y == 0 && levels[currentLevel].top === null)) {
-      readyToFall = false;
+    const regularStop = !readyToFall && !reverseGravity && getFirst(player).y == floor && levels[currentLevel].bottom === null;
+    const reverseStop = !readyToRise && reverseGravity && getFirst(player).y == 0 && levels[currentLevel].top === null;
+    if ((determineIfIsSolidNearPlayer() && !reverseGravity) || regularStop) {
       velocity = 0;
       airborne = false; // Player can jump on platforms
+    } else if ((determineIfIsSolidNearPlayer() && reverseGravity) || reverseStop) {
+      
     } else {
       airborne = true;
     }
