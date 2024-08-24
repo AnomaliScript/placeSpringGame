@@ -1,6 +1,4 @@
 /*
-First time? Check out the tutorial game:
-https://sprig.hackclub.com/gallery/getting_started
 
 @title: place
 @author: Brandon (AnomalScript)
@@ -29,7 +27,7 @@ const GRAVITY = 0.25;
 
 // Upside-down B)
 const gravitySwitch = "w";
-var reverseGravity = false;
+let reverseGravity = false;
 const UDplayer = "u";
 
 /*✧･ﾟ: *✧･ﾟ:* Textures! ✧･ﾟ: *✧･ﾟ:*/
@@ -225,7 +223,11 @@ setInterval(() => {
     addText(`${velocity}`, { x: 3, y: 3, color: color`D` });
     
     // Falling
-    velocity += GRAVITY;
+    if (!reverseGravity) {
+      velocity += GRAVITY;
+    } else {
+      velocity -= GRAVITY;
+    }
 
     const playerPosition = getFirst(player); // Get the player sprite (for reference)
     const targetY = getFirst(player).y + Math.floor(velocity);
@@ -310,7 +312,7 @@ setInterval(() => {
 const levels = [
   {
     name: "start",
-    left: null,
+    left: "ruins",
     right: "place1",
     top: "reach1",
     bottom: null,
@@ -348,6 +350,7 @@ const levels = [
 ................
 ................
 ................
+................
 .......bb.......
 .......gg.......
 .......bb.......
@@ -358,6 +361,31 @@ const levels = [
 ................
 ........ssssssss`,
     spawnPos: {x: 2, y: floor}
+  },
+  {
+    name: "ruins",
+    left: null,
+    right: "start",
+    top: "crushedHopes",
+    bottom: null,
+    map: map`
+....b...........
+.....b..........
+......b.........
+.......b........
+....b...b.......
+w..b...........g
+..b.......b...g.
+.....d.....b.g..
+.....bd.....b...
+......b.....g...
+..b....b....b.d.
+...b.......b..b.
+....b.....b.....
+................
+................
+................`,
+    spawnPos: {x: 12, y: floor}
   }
 ]
 
@@ -366,18 +394,30 @@ const levels = [
 let currentLevel = 0;
 // This is the actual converter
 function convertToIndex(name) {
-  currentLevel = levels.findIndex(level => level.name === name);
+  return levels.findIndex(level => level.name === name);
 }
 
-function drawLevel() {
-  const level = levels[currentLevel];
-  setMap(level.map);
-
-  if (currentLevel == 0) {
-    addSprite(level.spawnPos.x, level.spawnPos.y, player);
+function drawLevel(direction) {
+  if (direction === "left") {
+    const saveY = getFirst(player).y;
+    currentLevel = convertToIndex(levels[currentLevel].left);
+    const level = levels[currentLevel];
+    setMap(level.map);
+    addSprite(width() - 1, saveY, player);
+  } else if (direction === "right") {
+    const saveY = getFirst(player).y;
+    currentLevel = convertToIndex(levels[currentLevel].right);
+    const level = levels[currentLevel];
+    setMap(level.map);
+    addSprite(0, saveY, player);
+  } else {
+    // starting level rendering
+    setMap(levels[0].map);
+    // First player spawn, will never happen again
+    addSprite(5, floor, player);
   }
 };
-drawLevel();
+drawLevel("none");
 
 // Game Loop
 let game = {
@@ -399,11 +439,9 @@ onInput("w", () => {
 });
 
 onInput("a", () => {
-  if (getFirst(player).x == 16) {
-    if (levels[currentLevel].left) {
-      currentLevel = convertToIndex(levels[currentLevel].left);
-      drawLevel();
-      getFirst(player).x = 16;
+  if (getFirst(player).x == 0) {
+    if (levels[currentLevel].left !== null) {
+      drawLevel("left");
     }
   } else {
     getFirst(player).x -= 1;
@@ -414,9 +452,7 @@ onInput("a", () => {
 onInput("d", () => {
   if (getFirst(player).x == 16) {
     if (levels[currentLevel].right !== null) {
-      currentLevel = convertToIndex(levels[currentLevel].right);
-      drawLevel();
-      getFirst(player).x = 0;
+      drawLevel("right");
     }
   } else {
     getFirst(player).x += 1;
