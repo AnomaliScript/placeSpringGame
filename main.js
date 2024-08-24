@@ -1,5 +1,4 @@
 /*
-
 @title: place
 @author: Brandon (AnomaliScript)
 @tags: []
@@ -7,7 +6,6 @@
 */
 
 // Tile Sprites
-const floor = 15;
 const player = "p";
 const spike = "s";
 const red = "e";
@@ -18,18 +16,18 @@ const crate = "c";
 const door = "d";
 
 // Physics Variables
+let floor = 10;
 let velocity = 0;
-var airborne = false;
-var left = false;
-var right = false;
+let airborne = false;
+let left = false;
+let right = false;
 const JUMPHEIGHT = 1.0;
 const GRAVITY = 0.25;
 let frameRate = 60;
 
-// Upside-down B)
+// Upside-Down Physics
 const gravitySwitch = "w";
 let reverseGravity = false;
-const UDplayer = "u";
 
 /*✧･ﾟ: *✧･ﾟ:* Textures! ✧･ﾟ: *✧･ﾟ:*/
 setLegend(
@@ -47,23 +45,6 @@ setLegend(
 ....002220000...
 .....0000000....
 ......00000.....
-................
-................
-................`],
-  [UDplayer, bitmap`
-................
-................
-................
-.....555555.....
-....55555555....
-...5555LLL555...
-...555L555L55...
-...5555555555...
-...5555555555...
-...5555L5L555...
-...5555555555...
-....55555555....
-.....555555.....
 ................
 ................
 ................`],
@@ -224,10 +205,20 @@ function jpb() {
   }
 }
 
+// Game Loop
+let game = {
+  running: true,
+  isRunning() { return this.running },
+  end() {
+    this.running = false;
+    addText("The end!");
+  }
+}
+
 // Gravity
 setInterval(() => {
   if (game.isRunning()) {
-    
+    floor = height() - 1;
     // troubleshooting addText stuff
     clearText();
     addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 3, y: 1, color: color`5`}); // Display the player coordinates
@@ -245,15 +236,21 @@ setInterval(() => {
     const targetTile = getTile(playerPosition.x, playerPosition.targetY); // Get the tile "below" the player
     
     // Start of the "falling clipping player" bug fix //
-    const skippedTilesBelow = [];
-    for (let i = 1; i <= Math.abs(Math.floor(velocity)); i++) {
-      const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
-      skippedTilesBelow.push(getTile(playerPosition.x, scanY));
+    const skippedTiles = [];
+    if (!reverseGravity) {
+      for (let i = 1; i <= Math.abs(Math.floor(velocity)); i++) {
+        const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
+        skippedTiles.push(getTile(playerPosition.x, scanY));
+      }
+    } else {
+      for (let i = 1; i <= Math.abs(Math.floor(velocity)); i++) {
+        const scanY = playerPosition.y - Math.sign(velocity) * i; // Adjust based on velocity direction
+        skippedTiles.push(getTile(playerPosition.x, scanY));
+      }
     }
-    
     // Identify the platform position for the player to land on
     let platformY = null;
-    for (const tile of skippedTilesBelow) {
+    for (const tile of skippedTiles) {
         for (const sprite of tile) {
             if (sprite.type === block || sprite.type === glass) {
                 platformY = sprite.y;
@@ -264,18 +261,29 @@ setInterval(() => {
             break; // Exit the loop if platform position is found
         }
     }
-    
-    if (platformY !== null) { 
-      getFirst(player).y = platformY - 1; // Adjust as needed for player size
-      velocity = 0;
+    if (!reverseGravity) {
+      if (platformY !== null) { 
+        getFirst(player).y = platformY - 1; // Adjust as needed for player size
+        velocity = 0;
+      } else {
+        /* 
+        Mininum function to make sure the velocity doesn't freeze the player middair because the (playerY + velocity)
+        is greater than the floor i.e. 15
+        */
+        getFirst(player).y = Math.min(targetY, floor);
+      }
     } else {
-      /* 
-      Mininum function to make sure the velocity doesn't freeze the player middair because the (playerY + velocity)
-      is greater than the floor i.e. 15
-      */
-      getFirst(player).y = Math.min(targetY, floor);
+      if (platformY !== null) { 
+        getFirst(player).y = platformY + 1; // Adjust as needed for player size
+        velocity = 0;
+      } else {
+        /* 
+        Mininum function to make sure the velocity doesn't freeze the player middair because the (playerY + velocity)
+        is greater than the top i.e. 0
+        */
+        getFirst(player).y = Math.min(targetY, 0);
+      }
     }
-    
     // End of the "falling clipping player" bug fix //
 
     jpb();
@@ -300,7 +308,7 @@ setInterval(() => {
         }
       }
     } else {
-      const oneAbove = getTile(getFirst(player).x, getFirst(player).y + 1);
+      const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
       for (const sprite of oneAbove) {
         if (sprite.type === block || sprite.type === glass) {
           isSolidNearPlayer = true;
@@ -309,15 +317,10 @@ setInterval(() => {
       }
     }
     //addText(`${isSolidUnderPlayer}`, { x: 8, y: 6, color: color`L` });
-    // stopper editing (not gonna use floor because the maps' "spawnPos"es need that to be constant
-    let stopper = 15;
-    if (reverseGravity) {
-      stopper = 0;
-    } else {
-      stopper = 15;
-    }
-    if (isSolidNearPlayer || (getFirst(player).y == stopper)) {
-      velocity = 0; // Set velocity to zero to prevent clipping
+
+    // airborne logic
+    if (isSolidNearPlayer || (getFirst(player).y == floor) || (reverseGravity && getFirst(player).y == 0)) {
+      velocity = 0;
       airborne = false; // Player can jump on platforms
     } else {
       airborne = true;
@@ -325,13 +328,12 @@ setInterval(() => {
     addText(`airborne: ${airborne}`, { x: 3, y: 5, color: color`5` });
 
     // HOVER CASES
-    // DEATH CASE :skull:
+    // DEATH case :skull:
     let spikes = getAll(spike);
     for (let i = 0; i < spikes.length; i++) {
       if (playerPosition.x == spikes[i].x && playerPosition.y == spikes[i].y) {
         getFirst(player).x = levels[currentLevel].spawnPos.x;
         getFirst(player).y = levels[currentLevel].spawnPos.y;
-        addText("you died :(", { x: 3, y: 6, scale: 0.5, color: color`0`});
       }
     }
   }
@@ -446,16 +448,6 @@ function drawLevel(direction) {
 };
 drawLevel("none");
 
-// Game Loop
-let game = {
-  running: true,
-  isRunning() { return this.running },
-  end() {
-    this.running = false;
-    addText("The end!");
-  }
-}
-
 // Keybinds
 onInput("w", () => {
   if (!reverseGravity) {
@@ -499,6 +491,11 @@ onInput("d", () => {
   jpb();
 });
 
+onInput("i", () => {
+  gravitySwitching();
+  //jpb();
+});
+
 // i cases (like e in roblox, "i" in this game is the "use" key)
 // gravity switch
 function gravitySwitching() {
@@ -521,11 +518,6 @@ function gravitySwitching() {
 // doors
 
 
-onInput("i", () => {
-  gravitySwitching();
-  //jpb();
-});
-
 // AFTERINPUT
 afterInput(() => {
   
@@ -534,11 +526,6 @@ afterInput(() => {
   let spikePosition = getAll(spike); // Get the spike sprite
   if (playerPosition) {
     const playerCoords = `${playerPosition.x}, ${playerPosition.y}`; // Get the x and y coordinates of the player
-    clearText(); // Clear previous text on the screen
-    // All text goes here
-    /* addText(playerCoords, { x: 8, y: 1, color: color`5`, scale: 0.8 }); // Display the player coordinates
-    addText(`${getTile(getFirst(player).x, getFirst(player).y + 1)}`, { x: 8, y: 3, color: color`5` });
-    addText(`${velocity}`, { x: 8, y: 3, color: color`5` }); */
   }
 
   // Surveillence death check (movement = death, but not if you're falling; act "dead")
