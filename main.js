@@ -11,12 +11,9 @@ https://sprig.hackclub.com/gallery/getting_started
 const floor = 16;
 const player = "p";
 const spike = "b";
-var velocity = -1;
-var gravity = true;
+var airborne = true;
+var jumpRefresh = 0;
 
-async function gravityFalling() {
-  await wait(500);
-}
 
 setLegend(
   [player, bitmap`
@@ -78,7 +75,7 @@ const levels = [{
 .................
 .................
 .................`,
-  playerPos: { x: 5, y: 5},
+  playerPos: { x: 5, y: floor},
   spikePos: { x: 9, y: floor},
 }]
 
@@ -87,8 +84,6 @@ let currentLevel = 0;
 const drawLevel = (levelIndex) => {
   const level = levels[levelIndex];
   setMap(level.map);
-
-  // Got rid of aliasing the positions into separate variables for naming simplicity
 
   // Add player and spike sprites
   addSprite(level.playerPos.x, level.playerPos.y, player);
@@ -110,32 +105,19 @@ onInput("a", () => {
   getFirst(player).x -= 1;
 });
 
-onInput("s", () => {
+/* onInput("s", () => {
   getFirst(player).y += 1;
-});
+}); */
 
 onInput("d", () => {
   getFirst(player).x += 1;
 });
 
-// Get the player sprite
-const playerPosition = getFirst(player);
-
-// WHILE TRUE (for gravity)
-while(gravity == true) {
-  function wait(milliseconds) {
-    return new Promise(resolve => {
-      setTimeout(resolve, milliseconds);
-    });
-  }
-  gravityFalling();
-  playerPosition.x -= velocity;
-}
 
 afterInput(() => {
   // Coords
-  const playerPosition = getFirst(player);
-  const spikePosition = getFirst(spike); // Get the spike sprite
+  let playerPosition = getFirst(player); // Get the spike sprite
+  let spikePosition = getFirst(spike); // Get the spike sprite
   if (playerPosition) {
     const playerCoords = `${playerPosition.x}, ${playerPosition.y}`; // Get the x and y coordinates of the player
     clearText(); // Clear previous text on the screen
@@ -147,6 +129,9 @@ afterInput(() => {
     addText("you died :(", { x: 3, y: 3, scale: 0.5, color: color`0`});
   }
 
-  // Gravity
-  
+  // Gravity (will happen every time when a new key is pressed because that's th only way time can go forward)
+  if (airborne) {
+    // Time only "happens" when you press the next key
+    setInterval(playerY += 1, 1000);
+  }
 })
