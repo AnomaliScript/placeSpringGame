@@ -3,7 +3,7 @@ First time? Check out the tutorial game:
 https://sprig.hackclub.com/gallery/getting_started
 
 @title: place
-@author: Brandon
+@author: Brandon (AnomalScript)
 @tags: []
 @addedOn: 2024-08-10
 */
@@ -27,12 +27,12 @@ const GRAVITY = 0.25;
 // Gravity
 setInterval(() => {
   if (game.isRunning()) {
-    // troubleshooting stuff
+    
+    // troubleshooting addText stuff
     clearText();
     addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 8, y: 1, color: color`5`}); // Display the player coordinates
     addText(`${velocity}`, { x: 8, y: 3, color: color`D` });
     
-
     // Falling
     velocity += GRAVITY;
 
@@ -40,12 +40,14 @@ setInterval(() => {
     const targetY = getFirst(player).y + Math.floor(velocity);
     const targetTile = getTile(playerPosition.x, playerPosition.targetY); // Get the tile "below" the player
     addText(`${targetTile.x}, ${targetTile.y}`, { x: 5, y: 4, color: color`5` });
+    
+    // Start of the "clipping player" bug fix //
     const skippedTilesBelow = [];
     for (let i = 1; i <= Math.abs(Math.floor(velocity)); i++) {
       const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
       skippedTilesBelow.push(getTile(playerPosition.x, scanY));
     }
-
+    
     // Identify the platform position for the player to land on
     let platformY = null;
     for (const tile of skippedTilesBelow) {
@@ -71,8 +73,21 @@ setInterval(() => {
       getFirst(player).y = Math.min(targetY, floor);
     }
     
+    // End of the "clipping player" bug fix //
+    
+    // Prevent the player from "jumping onto" blocks
+    // No need to "scan" tiles compared to falling because velocity's max isn't lower than -1
+    for (const tile of tilesWith(block, glass)) {
+      for (const sprite of aboveTile) {
+        if (playerPosition.x == tile.x && playerPositon.y - 1 == tile.y) {
+          getFirst(player).y = 0;
+        }
+      }
+    }
+    
     let isSolidUnderPlayer = false;
-    for (const sprite of getTile(getFirst(player).x, getFirst(player).y + 1)) {
+    const oneBelow = getTile(getFirst(player).x, getFirst(player).y + 1);
+    for (const sprite of oneBelow) {
       if (sprite.type === block || sprite.type === glass) {
         isSolidUnderPlayer = true;
         break;
@@ -273,13 +288,13 @@ const levels = [{
 .................
 ..bb.............
 .................
-.....bb..........
+bb...bb..........
 .................
 ........gg.......
 .................
 bb.........gg....
 .................
-...............bb
+bb.............bb
 .........ss......`,
   playerPos: { x: 5, y: floor},
 }]
@@ -321,7 +336,7 @@ onInput("d", () => {
   getFirst(player).x += 1;
 });
 
-// AFTERINPUT RAHHHH
+// AFTERINPUT
 afterInput(() => {
   
   // Coords
@@ -338,7 +353,6 @@ afterInput(() => {
 
   // Spike death check
   let spikes = getAll(spike);
-
   for (let i = 0; i < spikes.length; i++) {
     if (playerPosition.x == spikes[i].x && playerPosition.y == spikes[i].y) {
       // TODO: Add death cases
