@@ -23,6 +23,7 @@ let left = false;
 let right = false;
 const JUMPHEIGHT = 1.0;
 const GRAVITY = 0.25;
+let readyToFall = false;
 let frameRate = 60;
 
 // Upside-Down Physics
@@ -208,13 +209,10 @@ function jpb() {
     const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
     for (const sprite of oneAbove) {
       if (sprite.type === block || sprite.type === glass) {
-        if (velocity == 0 || velocity == 0.25) {
-          // Just passing in
-          break;
-        } else {
-          // Hit the block with force
+        if (velocity != 0 && velocity != 0.25) {
           velocity = 1;
           flag = true;
+          break;
         }
       }
     }
@@ -280,9 +278,16 @@ setInterval(() => {
         // Hitting the ceiling
         velocity = 1;
       }
-      let readyToFall = (playerPosition.y == floor && velocity >= 0 && levels[currentLevel].bottom !== null);
-      if (readyToFall && ) {
-        // Lower scrolling
+      // Lower scrolling
+      if (playerPosition.y == floor && velocity >= 0 && levels[currentLevel].bottom !== null) {
+        readyToFall = true;
+      }
+      if (levels[currentLevel].bottomPlat.includes(playerPosition.x)) {
+        readyToFall = false;
+      }
+      console.log(`falling: ${readyToFall}`);
+      if (readyToFall) {
+        readyToFall = false;
         drawLevel("bottom");
         targetY = 0;
       }
@@ -302,7 +307,6 @@ setInterval(() => {
         targetY = 1;
       }
     }
-    addText(`ready2fall: ${readyToFall}`, { x: 3, y: 9, color: color`9` });
     
     // Start of the "falling clipping player" bug fix //
     const skippedTiles = [];
@@ -398,6 +402,7 @@ setInterval(() => {
     
     // airborne logic
     if (isSolidNearPlayer || (!reverseGravity && getFirst(player).y == floor && velocity >= 0 && levels[currentLevel].bottom === null) || (reverseGravity && getFirst(player).y == 0 && levels[currentLevel].top === null)) {
+      readyToFall = false;
       velocity = 0;
       airborne = false; // Player can jump on platforms
     } else {
@@ -442,7 +447,19 @@ bb.........gg....
 .................
 bb............bb.
 .........ss......`,
-    spawnPos: { x: 5, y: floor}
+    spawnPos: { x: 5, y: floor},
+    /*
+    topPlat is all of the x-coords that the player cannot enter the "top" level in
+    It references the blocks from "top" level but the values are hard-coded and stored 
+    in the current level because sprig can't access data from other levels
+    */
+    topPlat: [],
+    /*
+    bottomPlat is all of the x-coords that the player cannot enter the "bottom" level in
+    It references the "bottom" level but the values are hard-coded and stored 
+    in the current level because sprig can't access data from other levels
+    */
+    bottomPlat: []
   },
   {
     name: "place1",
@@ -467,7 +484,9 @@ bb............bb.
 ................
 ................
 ........ssssssss`,
-    spawnPos: {x: 2, y: floor}
+    spawnPos: {x: 2, y: floor},
+    topPlat: [],
+    bottomPlat: []
   },
   {
     name: "ruins",
@@ -492,7 +511,9 @@ b....bd.....b....
 .................
 ......b..........
 .................`,
-    spawnPos: {x: 12, y: floor}
+    spawnPos: {x: 12, y: floor},
+    topPlat: [],
+    bottomPlat: [0, 1, 4, 5, 10, 11, 14, 15, 16]
   },
   {
     name: "reach1",
@@ -515,7 +536,9 @@ d.g....bbb.......
 bbbb.............
 .................
 ....bbb..........`,
-    spawnPos: {x: 5, y: 12}
+    spawnPos: {x: 5, y: 12},
+    topPlat: [],
+    bottomPlat: []
   },
   {
     name: "belowRuins",
@@ -536,7 +559,9 @@ bb..bb....bb..bbb
 ........bb.......
 .................
 .................`,
-    spawnPos: {x: 10, y: 7}
+    spawnPos: {x: 10, y: 7},
+    topPlat: [],
+    bottomPlat: []
   }
 ]
 
