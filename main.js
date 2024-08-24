@@ -21,23 +21,25 @@ const door = "d";
 // Physics Variables
 let velocity = 0;
 var airborne = false;
-const JUMPHEIGHT = 1.2;
-const GRAVITY = 0.3;
+const JUMPHEIGHT = 1.0;
+const GRAVITY = 0.25;
 
 // Gravity
 setInterval(() => {
   if (game.isRunning()) {
     // troubleshooting stuff
     clearText();
-    addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 8, y: 1, color: color`5`, scale: 0.8 }); // Display the player coordinates
-    addText(`${velocity}`, { x: 8, y: 3, color: color`5` });
-    addText(`${airborne}`, { x: 8, y: 6, color: color`5` });
+    addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 8, y: 1, color: color`5`}); // Display the player coordinates
+    addText(`${velocity}`, { x: 8, y: 3, color: color`D` });
+    
 
     // Falling
     velocity += GRAVITY;
-    const targetY = getFirst(player).y + velocity
-    
+
     const playerPosition = getFirst(player); // Get the player sprite (for reference)
+    const targetY = getFirst(player).y + Math.floor(velocity);
+    const targetTile = getTile(playerPosition.x, playerPosition.targetY); // Get the tile "below" the player
+    addText(`${targetTile.x}, ${targetTile.y}`, { x: 5, y: 4, color: color`5` });
     const skippedTilesBelow = [];
     for (let i = 1; i <= Math.abs(Math.floor(velocity)); i++) {
       const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
@@ -57,35 +59,33 @@ setInterval(() => {
             break; // Exit the loop if platform position is found
         }
     }
-
+    
     if (platformY !== null) { 
-      getFirst(player).y = Math.min(platformY - 1, floor); // Adjust as needed for player size
+      getFirst(player).y = platformY - 1; // Adjust as needed for player size
+      velocity = 0;
     } else {
       /* 
       Mininum function to make sure the velocity doesn't freeze the player middair because the (playerY + velocity)
       is greater than the floor i.e. 16
       */
-      const targetY = getFirst(player).y + Math.floor(velocity);
       getFirst(player).y = Math.min(targetY, floor);
     }
-
-    const targetTile = getTile(playerPosition.x, playerPosition.targetY); // Get the tile "below" the player
-    addText(`${targetTile.x}, ${targetTile.y}`, { x: 2, y: 5, color: color`5` });
+    
     let isSolidUnderPlayer = false;
-    for (const sprite of targetTile) {
+    for (const sprite of getTile(getFirst(player).x, getFirst(player).y + 1)) {
       if (sprite.type === block || sprite.type === glass) {
         isSolidUnderPlayer = true;
-        velocity = 0; // Set velocity to zero to prevent clipping
-        airborne = false; // Player can jump on platforms
         break;
       }
     }
+    //addText(`${isSolidUnderPlayer}`, { x: 8, y: 6, color: color`L` });
     if (isSolidUnderPlayer || getFirst(player).y == floor) {
-      airborne = false;
-      velocity = 0;
+      velocity = 0; // Set velocity to zero to prevent clipping
+      airborne = false; // Player can jump on platforms
     } else {
       airborne = true;
     }
+    addText(`${airborne}`, { x: 8, y: 6, color: color`5` });
   }
 }, /* frame updates after */ 60 /* milliseconds */);
 
