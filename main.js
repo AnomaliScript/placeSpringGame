@@ -253,13 +253,14 @@ function verticalScrolling() {
       return;
     }
     // Passive movement (gravity movement and acceleration)
-    if (targetY >= floor && Math.floor(velocity) >= 0 && levels[currentLevel].bottom !== null) {
-      readyToFall = true;
-    }
-    if (levels[currentLevel].bottomPlat.includes(playerPosition.x)) {
+    if (levels[currentLevel].bottomPlat.includes(playerPosition.x) || 
+        targetY < floor || 
+        Math.floor(velocity) < 0 || 
+        levels[currentLevel].bottom === null) {
       readyToFall = false;
       return;
     }
+    readyToFall = true;
     if (readyToFall) {
       console.log("falling!");
 
@@ -292,7 +293,7 @@ function verticalScrolling() {
       // Active movement (jump)
       drawLevel("bottom");
       justEntered = true;
-      return;
+      return 0;
     } else if (targetY == height()) {
       // Hitting the "ceiling"
       velocity = -1;
@@ -303,7 +304,7 @@ function verticalScrolling() {
       return;
     }
     // Passive movement (gravity movement and acceleration)
-    if (targetY <= 0 && Math.ceil(velocity) <= 0 && levels[currentLevel].top !== null) {
+    if (playerPosition.y == 0 && Math.ceil(velocity) <= 0 && levels[currentLevel].top !== null) {
       readyToRise = true;
     }
     if (levels[currentLevel].topPlat.includes(playerPosition.x)) {
@@ -315,26 +316,25 @@ function verticalScrolling() {
       // Carrying the velocity over
       if (targetY < 0) {
         offset = ((Math.ceil(velocity) + playerPosition.y) + 1);
+      } else {
+        offset = 0;
       }
       drawLevel("top");
-      if (Math.abs(offset) >= height()) {
-        while (Math.abs(offset) >= height()) {
-          // Calculate platformY (if it exists)
-          calculatePlatform(getSkippedTiles());
-          if (platformY !== null) {
-            return;
-          }
-          // Calculate offset
-          offset -= height();
+      /* while (offset < 0) {
+        // Calculate offset
+        offset = ((Math.ceil(velocity) + playerPosition.y) + 1);
+        targetY = floor - offset;
+        // Calculate platformY (if it exists)
+        calculatePlatform(getSkippedTiles());
+        if (platformY !== null) {
           drawLevel("top");
+          return;
         }
-      }
+      } */
       /* if (offset <= 0) {
         platformY = null;
       } */
-      // Calculate platformY (if it exists)
-      calculatePlatform(getSkippedTiles());
-      targetY = floor + offset;
+      targetY = floor - offset;
       return;
     }
   }
@@ -478,11 +478,11 @@ setInterval(() => {
     flag = false;
     jpb();
 
-    // airborne logic:
+    // airborne logic (this is where A LOT of bugs have happened):
     // !reverseGravity = gravity case
     // !readyTo___ = checks for a level underneath and if the player is on the floor (or approaching it)
-    const regularStop = !reverseGravity && !readyToFall && velocity >= 0 && getFirst(player).y == floor;
-    const reverseStop = reverseGravity && !readyToRise && velocity <= 0 && getFirst(player).y == 0;
+    const regularStop = !reverseGravity && !readyToFall && !justEntered && getFirst(player).y == floor;
+    const reverseStop = reverseGravity && !readyToRise && !justEntered && velocity <= 0 && getFirst(player).y == 0 && (levels[currentLevel].top === null || levels[currentLevel].topPlat.includes(playerPosition.x));
     if ((determineIfIsSolidNearPlayer() && !reverseGravity) || regularStop) {
       velocity = 0;
       airborne = false; // Player can jump on platforms
@@ -517,7 +517,7 @@ setInterval(() => {
       addText(`${Math.floor(velocity)}, ${Math.ceil(velocity)}`, { x: 13, y: 1, color: color`D` });
       addText(`${floor}`, { x: 15, y: 7, color: color`5` });
       addText(`${height()}`, { x: 14, y: 9, color: color`4` });
-      addText(`offset: ${offset}`, { x: 2, y: 9, color: color`7` });
+      addText(`offset: ${offset}`, { x: 3, y: 9, color: color`7` });
       addText(`flag: ${flag}`, { x: 3, y: 7, color: color`3` });
       addText(`airborne: ${airborne}`, { x: 3, y: 3, color: color`1` });
       addText(`${targetY}`, { x: 9, y: 5, color: color`H` });
@@ -549,8 +549,8 @@ bb...bb..........
 ........gg.......
 .................
 bb.........gg....
-...............b.
-bb............b..
+.................
+bb............bb.
 .........ss......`,
     spawnPos: { x: 5, y: floor },
     /*
@@ -786,6 +786,10 @@ onInput("i", () => {
   //jpb();
 });
 
+onInput("j", () => {
+  breakGlass();
+});
+
 onInput("k", () => {
   if (frameRate == 60) {
     frameRate = 500;
@@ -814,6 +818,24 @@ function gravitySwitching() {
       reverseGravity = true;
     }
   }
+}
+
+// breaking glass
+function breakGlass() {
+  const playerPosition = getFirst(player);
+  const around = [];
+  const directions = Array.from({length: 3}, (_, i) => i - 1)  // [-1, 0, 1]
+    .flatMap(x => Array.from({length: 3}, (_, y) => [x, y - 1]))
+    .filter(([x, y]) => !(x === 0 && y === 0));
+  for (let i = 0; i < directions.length; i++) {
+    for (sprite.type in getTile(playerPosition.x + directions[i][0], playerPosition.y + directions[i][1])) {
+      if (sprite === glass) {
+        sprite.remove();
+        addSprite(playerPosition.x + directions[i][0], playerPosition.y + directions[i][1], brokenGlass);
+      }
+    }
+  }
+  
 }
 
 // doors
