@@ -36,8 +36,13 @@ let frameRate = 60;
 // Upside-Down Physics
 let reverseGravity = false;
 
+// Abilities!
+let doubleJump = false;
+let gravityAbility = false;
+let breakingAbility = false;
+
 // dev variables
-let debugMode = true;
+let debugMode = false;
 
 /*✧･ﾟ: *✧･ﾟ:* Textures! ✧･ﾟ: *✧･ﾟ:*/
 setLegend(
@@ -127,22 +132,22 @@ LLLLLLLLLLLLLLLL`],
 7222222222222227
 7777777777777777`],
   [glassBroken, bitmap`
-7777777...77777.
-7......77..77.7.
-7........7..7.77
-7........7..77.7
-7........77..7.7
-77....777.7..7.7
-77....7..77..7.7
-777..7......7..7
-..777..77...7..7
-......7.7..7...7
-...777..7.77..7.
-.777....7.7...77
-77......7.77...7
-.77.....7..777.7
-..7......7....77
-..777777777.....`],
+................
+................
+................
+................
+................
+................
+................
+................
+................
+..............7.
+..7........7....
+........7.......
+7.....7..7....7.
+.7..77....7.7...
+7..7....7....7..
+....7......7..7.`],
   [crate, bitmap`
 1111111111111111
 1CC1C1CCC1C1CCC1
@@ -206,7 +211,7 @@ function jpb() {
     const oneAbove = getTile(getFirst(player).x, getFirst(player).y - 1);
     for (const sprite of oneAbove) {
       if (sprite.type === block || sprite.type === glass) {
-        velocity = 0.5;
+        velocity = 0.25;
         flag = true;
         break;
       }
@@ -219,7 +224,7 @@ function jpb() {
     const oneBelow = getTile(getFirst(player).x, getFirst(player).y + 1);
     for (const sprite of oneBelow) {
       if (sprite.type === block || sprite.type === glass) {
-        velocity = -0.5;
+        velocity = -0.25;
         flag = true;
         break;
       }
@@ -255,7 +260,7 @@ function verticalScrolling() {
     // Passive movement (gravity movement and acceleration)
     if (levels[currentLevel].bottomPlat.includes(playerPosition.x) || 
         targetY < floor || 
-        Math.floor(velocity) <= 0 || 
+        Math.floor(velocity) < 0 || 
         levels[currentLevel].bottom === null) {
       readyToFall = false;
       return;
@@ -293,7 +298,8 @@ function verticalScrolling() {
       // Active movement (jump)
       drawLevel("bottom");
       justEntered = true;
-      return 0;
+      targetY = 0;
+      return;
     } else if (targetY == height()) {
       // Hitting the "ceiling"
       velocity = -1;
@@ -306,7 +312,7 @@ function verticalScrolling() {
     // Passive movement (gravity movement and acceleration)
     if (levels[currentLevel].topPlat.includes(playerPosition.x) || 
         targetY > 0 || 
-        Math.ceil(velocity) >= 0 || 
+        Math.ceil(velocity) > 0 || 
         levels[currentLevel].top === null) {
       readyToRise = false;
       return;
@@ -498,12 +504,23 @@ setInterval(() => {
       addText(`${readyToFall}`, { x: 6, y: 13, color: color`5` });
       addText(`${readyToRise}`, { x: 12, y: 13, color: color`4` });
     }
+    // Resetting ready cases
     if (readyToFall) {
       readyToFall = false;
     }
     if (readyToRise) {
       readyToRise = false;
     }
+
+    // Sweeping up the glass
+    for (const tile in tilesWith(glassBroken)) {
+      for (const sprite of tile) {
+        if (sprite.type === glassBroken) {
+          sprite.remove();
+        }
+      }
+    }
+    
     // HOVER CASES
     // DEATH case :skull:
     let spikes = getAll(spike);
@@ -792,12 +809,7 @@ onInput("j", () => {
 });
 
 onInput("k", () => {
-  if (frameRate == 60) {
-    frameRate = 500;
-  } else {
-    frameRate = 60;
-  }
-  //jpb();
+  
 });
 
 onInput("l", () => {
@@ -824,33 +836,34 @@ function gravitySwitching() {
 // breaking glass
 function breakGlass() {
   const playerPosition = getFirst(player);
-  const around = [];
   const directions = Array.from({length: 3}, (_, i) => i - 1)  // [-1, 0, 1]
     .flatMap(x => Array.from({length: 3}, (_, y) => [x, y - 1]))
     .filter(([x, y]) => !(x === 0 && y === 0));
   for (let i = 0; i < directions.length; i++) {
-    for (sprite.type in getTile(playerPosition.x + directions[i][0], playerPosition.y + directions[i][1])) {
-      if (sprite === glass) {
+    const scanningX = playerPosition.x + directions[i][0];
+    const scanningY = playerPosition.y + directions[i][1];
+    for (const sprite of getTile(scanningX, scanningY)) {
+      if (sprite.type === glass) {
         sprite.remove();
-        addSprite(playerPosition.x + directions[i][0], playerPosition.y + directions[i][1], brokenGlass);
+        addSprite(scanningX, scanningY, glassBroken);
       }
     }
   }
-  
 }
+
+// I tried
+/* time (for glass animation)
+function sleep(ms) {
+  const start = Date.now();
+  while (Date.now() - start < ms) {
+  }
+} */
 
 // doors
 
 
-// AFTERINPUT
+// AFTERINPUT (literally useless)
 afterInput(() => {
-
-  // Coords
-  let playerPosition = getFirst(player); // Get the spike sprite
-  let spikePosition = getAll(spike); // Get the spike sprite
-  if (playerPosition) {
-    const playerCoords = `${playerPosition.x}, ${playerPosition.y}`; // Get the x and y coordinates of the player
-  }
 
   // Surveillence death check (movement = death, but not if you're falling; act "dead")
   /*
