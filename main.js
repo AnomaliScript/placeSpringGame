@@ -19,22 +19,43 @@ const crate = "c";
 const door = "d";
 
 // Physics Variables
-let velocity = 0
-var canJump = true;
-const JUMPHEIGHT = 2;
-const GRAVITY = 0.1;
+let velocity = 0;
+var airborne = false;
+const JUMPHEIGHT = 1.2;
+const GRAVITY = 0.3;
+
+// Gravity
 setInterval(() => {
   if (game.isRunning()) {
-    velocity += GRAVITY
-    getFirst(player).y += Math.floor(velocity)
-  }
-}, 30)
+    clearText();
+    addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 8, y: 1, color: color`5`, scale: 0.8 }); // Display the player coordinates
+    addText(`${velocity}`, { x: 8, y: 3, color: color`5` });
+    addText(`${airborne}`, { x: 8, y: 6, color: color`5` });
+    velocity += GRAVITY;
+    getFirst(player).y += Math.floor(velocity);
 
+    const playerPosition = getFirst(player); // Get the player sprite
+    const tileBelow = getTile(playerPosition.x, playerPosition.y + 1); // Get the tile below the player
+    let isSolidUnderPlayer = false;
+    for (const sprite of tileBelow) {
+        if (sprite.type === block || sprite.type === glass) {
+            isSolidUnderPlayer = true;
+            airborne = false;
+            break;
+        }
+    }
+    if (isSolidUnderPlayer || getFirst(player).y == 16) {
+      velocity = 0; // Set velocity to zero to prevent clipping
+      airborne = false;
+    }
+  }
+}, /* frame updates after */ 60 /* seconds */);
 // Upside-down B)
 const gravitySwitch = "w";
 var reverseGravity = false;
 const UDplayer = "u";
 
+/*✧･ﾟ: *✧･ﾟ:* Textures! ✧･ﾟ: *✧･ﾟ:*/
 setLegend(
   [player, bitmap`
 ................
@@ -197,7 +218,7 @@ setSolids([player, block, glass])
 
 // Pushables (not needed rn)
 setPushables({
-  [player]: []
+  [player]: [crate]
 })
 
 // Maps/levels
@@ -217,9 +238,9 @@ const levels = [{
 .................
 .................
 .................
+...........gg....
 .................
-.................
-.................
+...............bb
 .........ss......`,
   playerPos: { x: 5, y: floor},
 }]
@@ -247,7 +268,10 @@ let game = {
 
 // Keybinds
 onInput("w", () => {
-  velocity = -JUMPHEIGHT;
+  if (!airborne) {
+    velocity = -JUMPHEIGHT;
+    airborne = true;
+  }
 });
 
 onInput("a", () => {
@@ -267,7 +291,10 @@ afterInput(() => {
   if (playerPosition) {
     const playerCoords = `${playerPosition.x}, ${playerPosition.y}`; // Get the x and y coordinates of the player
     clearText(); // Clear previous text on the screen
-    addText(playerCoords, { x: 8, y: 1, color: color`5`, scale: 0.8 }); // Display the player coordinates
+    // All text goes here
+    /* addText(playerCoords, { x: 8, y: 1, color: color`5`, scale: 0.8 }); // Display the player coordinates
+    addText(`${getTile(getFirst(player).x, getFirst(player).y + 1)}`, { x: 8, y: 3, color: color`5` });
+    addText(`${velocity}`, { x: 8, y: 3, color: color`5` }); */
   }
 
   // Spike death check
@@ -275,7 +302,8 @@ afterInput(() => {
 
   for (let i = 0; i < spikes.length; i++) {
     if (playerPosition.x == spikes[i].x && playerPosition.y == spikes[i].y) {
-      addText("you died :(", { x: 3, y: 3, scale: 0.5, color: color`0`});
+      // TODO: Add death cases
+      addText("you died :(", { x: 3, y: 6, scale: 0.5, color: color`0`});
     }
   }
 })
