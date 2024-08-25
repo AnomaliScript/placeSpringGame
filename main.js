@@ -247,7 +247,7 @@ LLLLLLLLLLLLLLLL
 ...3............
 ................
 ................`],
-  [rightArrow, bitmap`
+  [spm, bitmap`
 7..............7
 .7............7.
 ..7..........7..
@@ -663,7 +663,7 @@ setInterval(() => {
       case 1:
         addText("mode: physics", { x: 3, y: 15, color: color`D` });
         addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 3, y: 1, color: color`9` }); // Display the player coordinates
-        addText(`${Math.floor(velocity)}, ${Math.ceil(velocity)}`, { x: 13, y: 1, color: color`D` });
+        addText(`${Math.floor(velocity)}, ${Math.ceil(velocity)}, ${velocity}`, { x: 9, y: 1, color: color`D` });
         addText(`${floor}`, { x: 15, y: 7, color: color`5` });
         addText(`${height()}`, { x: 14, y: 9, color: color`4` });
         addText(`offset: ${offset}`, { x: 3, y: 9, color: color`7` });
@@ -673,11 +673,11 @@ setInterval(() => {
         addText(`${determineIfIsSolidNearPlayer()}`, { x: 3, y: 5, color: color`C` });
         addText(`${platformY}`, { x: 12, y: 5, color: color`6` });
         addText(`${justEntered}`, { x: 3, y: 11, color: color`8` });
-        addSprite(levels[currentLevel].spawnPoint[0], levels[currentLevel].spawnPoint[1], spm);
+        addSprite(levels[currentLevel].spawnPos.x, levels[currentLevel].spawnPos.y, spm);
         break;
       case 2:
         addText("mode: scrolling", { x: 3, y: 15, color: color`D` });
-        addText(`save coords: ${getFirst(player).x}, ${getFirst(player).y}`, { x: 1, y: 5, color: color`L` });
+        addText(`save crds: ${getFirst(player).x}, ${getFirst(player).y}`, { x: 1, y: 5, color: color`L` });
         if (Array.isArray(levels[currentLevel].left)) {
           addText(`${levels[currentLevel].left[0]}`, { x: 3, y: 7, color: color`C` });
           addText(`${levels[currentLevel].left[1]}`, { x: 3, y: 9, color: color`C` });
@@ -696,9 +696,10 @@ setInterval(() => {
         if ('rightSplit' in levels[currentLevel]) {
           addSprite(width() - 1, levels[currentLevel].rightSplit, rightArrow);
         }
+        addText(`${levels[currentLevel].name}`, { x: 3, y: 1, color: color`4` });
+        for (const tile of tilesWith(spm)) {for (const sprite of tile) {if (sprite.type === spm) {sprite.remove();}}}
         break;
       default:
-        for (const tile of tilesWith(spm)) {for (const sprite of tile) {if (sprite.type === spm) {sprite.remove();}}}
         for (const tile of tilesWith(red)) {for (const sprite of tile) {if (sprite.type === red) {sprite.remove();}}}
         for (const tile of tilesWith(leftArrow)) {for (const sprite of tile) {if (sprite.type === leftArrow) {sprite.remove();}}}
         for (const tile of tilesWith(rightArrow)) {for (const sprite of tile) {if (sprite.type === rightArrow) {sprite.remove();}}}
@@ -755,7 +756,7 @@ bb..........bb..
 .......bb.......
 .....b.....b....
 .bb..........bb.
-................`,
+...b............`,
     spawnPos: {x: 2, y: floor}
   },
   {
@@ -765,23 +766,23 @@ bb..........bb..
     top: "plains",
     bottom: null,//"dungeon"
     map: map`
-bbb.........bbbb
-.....bd......b..
-.....bbbb....i..
-................
-...........s.b..
-...........b.i..
-bbbbbbbbb.......
-.....g..g..s.b..
-.....g..g..b.i..
-.....bbbb.......
-...........s....
-...........b....
+bbb..bbbbbbbbbbb
+.....bd.........
+.....bbbbbbbbb..
+...........g.i..
+...........b.d..
+.............b..
+bbbbbbbbb..s.i..
+...i.g..g..b....
+.s...g..g....b..
+bbbbbbbbb..s.i..
+..ii.......b....
+.......s........
 ..bbbbbbbbbbbbbb
 ..iiiiiiiiiiiiii
 ................
 ..ssssssssssssss`,
-    spawnPos: {x: 2, y: 10}
+    spawnPos: {x: 2, y: 5}
   },
   {
     name: "stairs",
