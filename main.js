@@ -37,6 +37,7 @@ let platformY;
 let targetY;
 let readyToFall = false;
 let justEntered = false;
+let stopIt = false; // stopIt IS ONLY USEFUL IF THERE ARE NO MOVING OBJECTS UNDERNEATH
 let offset;
 let frameRate = 60;
 
@@ -330,7 +331,8 @@ function verticalScrolling() {
     }
     // Passive movement (gravity movement and acceleration)
     // Pre-fall check (falling conditions)
-    if (targetY < floor || 
+    if (stopIt || 
+        targetY < floor || 
         Math.floor(velocity) < 0 || 
         levels[currentLevel].bottom === null) {
       readyToFall = false;
@@ -348,22 +350,25 @@ function verticalScrolling() {
         offset = 0;
       }
       drawLevel("bottom");
-      
-      tiles = getSkippedTiles();
-      for (const tile of tiles) {
+
+      // During-fall check (interfering platform)
+      const skipping = [];
+      for (let i = 0; i <= offset; i++) {
+        skipping.push(getTile(originalX, i));
+      }
+      for (const tile of skipping) {
         for (const sprite of tile) {
           if (sprite.type === block || sprite.type === glass) {
             console.log("you're getting sent back!");
-            currentLevel = originalLevel;
-            setMap(levels[currentLevel].map);
-            resetFloor();
-            addSprite(originalX, originalY, player);
+            drawLevel("top");
+            readyToFall = false;
+            stopIt = true;
             return;
           }
         }
-        }
       }
-      
+
+      // Now back to the offset velocity thing
       while (offset >= height()) {
         // Calculate offset
         targetY = offset;
@@ -398,7 +403,8 @@ function verticalScrolling() {
       return;
     }
     // Passive movement (gravity movement and acceleration)
-    if (targetY > 0 || 
+    if (stopIt || 
+        targetY > 0 || 
         Math.ceil(velocity) > 0 || 
         levels[currentLevel].top === null) {
       readyToRise = false;
@@ -415,6 +421,24 @@ function verticalScrolling() {
         offset = 0;
       }
       drawLevel("top");
+
+      // During-fall check (interfering platform)
+      const skipping = [];
+      for (let i = 0; i <= offset; i++) {
+        skipping.push(getTile(originalX, i));
+      }
+      for (const tile of skipping) {
+        for (const sprite of tile) {
+          if (sprite.type === block || sprite.type === glass) {
+            console.log("you're getting sent back!");
+            drawLevel("top");
+            readyToFall = false;
+            stopIt = true;
+            return;
+          }
+        }
+      }
+      
       while (offset < 0) {
         // Calculate offset
         offset = ((Math.ceil(velocity) + playerPosition.y) + 1);
@@ -962,6 +986,9 @@ onInput("a", () => {
   } else {
     getFirst(player).x -= 1;
   }
+  if (stopIt) {
+    stopIt = false;
+  }
   jpb();
 });
 
@@ -982,6 +1009,9 @@ onInput("d", () => {
     }
   } else {
     getFirst(player).x += 1;
+  }
+  if (stopIt) {
+    stopIt = false;
   }
   jpb();
 });
