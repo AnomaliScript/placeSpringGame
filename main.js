@@ -24,6 +24,7 @@ let currentLevel = 0;
 const red = "e";
 const leftArrow = "q";
 const rightArrow = "x";
+const spm /* "spawn point marker" */ = "m";
 
 // Physics Variables
 let floor = 10;
@@ -246,6 +247,23 @@ LLLLLLLLLLLLLLLL
 ...3............
 ................
 ................`],
+  [rightArrow, bitmap`
+7..............7
+.7............7.
+..7..........7..
+...7........7...
+....7......7....
+.....7....7.....
+......7..7......
+.......77.......
+.......77.......
+......7..7......
+.....7....7.....
+....7......7....
+...7........7...
+..7..........7..
+.7............7.
+7..............7`],
 )
 
 // Solids
@@ -383,7 +401,7 @@ function verticalScrolling() {
       //if (offset >= floor) {
         //platformY = null;
       //}
-      targetY = 0 + offset;
+      targetY = offset;
       return;
     }
   } else { /************  (reverse/upside-down gravity starts here)  ***********************/
@@ -404,7 +422,7 @@ function verticalScrolling() {
     }
     // Passive movement (gravity movement and acceleration)
     if (stopIt || 
-        targetY > 0 || 
+        targetY >= 0 || 
         Math.ceil(velocity) > 0 || 
         levels[currentLevel].top === null) {
       readyToRise = false;
@@ -655,6 +673,7 @@ setInterval(() => {
         addText(`${determineIfIsSolidNearPlayer()}`, { x: 3, y: 5, color: color`C` });
         addText(`${platformY}`, { x: 12, y: 5, color: color`6` });
         addText(`${justEntered}`, { x: 3, y: 11, color: color`8` });
+        addSprite(levels[currentLevel].spawnPoint[0], levels[currentLevel].spawnPoint[1], spm);
         break;
       case 2:
         addText("mode: scrolling", { x: 3, y: 15, color: color`D` });
@@ -679,6 +698,7 @@ setInterval(() => {
         }
         break;
       default:
+        for (const tile of tilesWith(spm)) {for (const sprite of tile) {if (sprite.type === spm) {sprite.remove();}}}
         for (const tile of tilesWith(red)) {for (const sprite of tile) {if (sprite.type === red) {sprite.remove();}}}
         for (const tile of tilesWith(leftArrow)) {for (const sprite of tile) {if (sprite.type === leftArrow) {sprite.remove();}}}
         for (const tile of tilesWith(rightArrow)) {for (const sprite of tile) {if (sprite.type === rightArrow) {sprite.remove();}}}
@@ -730,10 +750,10 @@ bb............bb.
 ......bb........
 ......gg........
 ......bb........
-...bb....bb.....
+................
 bb..........bb..
 .......bb.......
-....bb....bb....
+.....b.....b....
 .bb..........bb.
 ................`,
     spawnPos: {x: 2, y: floor}
@@ -745,7 +765,7 @@ bb..........bb..
     top: "plains",
     bottom: null,//"dungeon"
     map: map`
-bbb..bbbbbbbbbbb
+bbb.........bbbb
 .....bd......b..
 .....bbbb....i..
 ................
@@ -761,7 +781,7 @@ bbbbbbbbb.......
 ..iiiiiiiiiiiiii
 ................
 ..ssssssssssssss`,
-    spawnPos: {x: 2, y: floor}
+    spawnPos: {x: 2, y: 10}
   },
   {
     name: "stairs",
