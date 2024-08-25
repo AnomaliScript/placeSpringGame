@@ -732,7 +732,7 @@ b.........gdg...
   {
     name: "childrensGallery",
     left: [null, "stairs"],
-    leftSplit: 6,
+    leftSplit: 5,
     right: "exhibit",
     top: null,
     bottom: null,
@@ -848,10 +848,8 @@ function drawLevel(direction) {
       addSprite(0, saveY, player);
       return;
     }
-    const originalSaveY = saveY; // Shallow copy of saveY
-    const originalLevel = currentLevel; // Shallow copy of currentLevel
-    //const originalSaveY = saveY; // If the player is out of bounds
-    //const originalLevel = currentLevel; // Also if the player is out of bounds
+    const originalSaveY = saveY;
+    const originalLevel = currentLevel;
     const split = levels[currentLevel].rightSplit;
     if (saveY <= split) {
       // Checking for "splits" without a second level; that's how I make adjecent levels with height offsets
@@ -868,7 +866,7 @@ function drawLevel(direction) {
       }
       currentLevel = convertToIndex(levels[currentLevel].right[1]);
       setMap(levels[currentLevel].map);
-      saveY -= split + 1;
+      saveY -= (split + 1);
     }
     resetFloor();
     if (saveY < 0 || saveY > floor) {
@@ -877,13 +875,13 @@ function drawLevel(direction) {
       resetFloor();
       addSprite(0, originalSaveY, player);
     }
-    for (const sprite of getTile(width() - 1, saveY)) {
+    for (const sprite of getTile(0, saveY)) {
       if (sprite.type === block || sprite.type === glass) {
         console.log("you're getting sent back!");
         currentLevel = convertToIndex(levels[originalLevel]);
-        setMap(levels[currentLevel].map);
+        setMap(levels[originalLevel].map);
         resetFloor();
-        addSprite(0, originalSaveY, player);
+        addSprite(width() - 1, originalSaveY, player);
         return;
       }
     }
