@@ -37,6 +37,7 @@ let platformY;
 let targetY;
 let readyToFall = false;
 let justEntered = false;
+let stopIt = false; // stopIt IS ONLY USEFUL IF THERE ARE NO MOVING OBJECTS UNDERNEATH
 let offset;
 let frameRate = 60;
 
@@ -309,6 +310,7 @@ function verticalScrolling() {
   const playerPosition = getFirst(player);
   const originalLevel = currentLevel;
   const originalX = playerPosition.x;
+  const originalY = playerPosition.y;
   if (!reverseGravity) {
     if (targetY < 0 && levels[currentLevel].top !== null) {
       // Active movement (jump)
@@ -320,6 +322,7 @@ function verticalScrolling() {
     } else if (targetY == -1) {
       // Hitting the ceiling
       velocity = 1;
+      return;
     }
     // Guard clause to exit the function for if a player has just entered another level
     if (justEntered) {
@@ -327,12 +330,15 @@ function verticalScrolling() {
       return;
     }
     // Passive movement (gravity movement and acceleration)
-    if (targetY < floor || 
+    // Pre-fall check (falling conditions)
+    if (stopIt || 
+        targetY < floor || 
         Math.floor(velocity) < 0 || 
         levels[currentLevel].bottom === null) {
       readyToFall = false;
       return;
     }
+    
     readyToFall = true;
     if (readyToFall) {
       console.log("falling!");
@@ -344,21 +350,25 @@ function verticalScrolling() {
         offset = 0;
       }
       drawLevel("bottom");
-      tiles = getSkippedTiles();
-      for (const tile of tiles) {
-        if (tile.length > 0) {
-          for (const sprite of tile) {
-            if (sprite.type === block || sprite.type === glass) {
-              console.log("you're getting sent back!");
-              currentLevel = originalLevel;
-              setMap(levels[currentLevel].map);
-              resetFloor();
-              addSprite(originalX, , player);
-              return;
-            }
+
+      // During-fall check (interfering platform)
+      const skipping = [];
+      for (let i = 0; i <= offset; i++) {
+        skipping.push(getTile(originalX, i));
+      }
+      for (const tile of skipping) {
+        for (const sprite of tile) {
+          if (sprite.type === block || sprite.type === glass) {
+            console.log("you're getting sent back!");
+            drawLevel("top");
+            readyToFall = false;
+            stopIt = true;
+            return;
           }
         }
       }
+
+      // Now back to the offset velocity thing
       while (offset >= height()) {
         // Calculate offset
         targetY = offset;
@@ -393,7 +403,8 @@ function verticalScrolling() {
       return;
     }
     // Passive movement (gravity movement and acceleration)
-    if (targetY > 0 || 
+    if (stopIt || 
+        targetY > 0 || 
         Math.ceil(velocity) > 0 || 
         levels[currentLevel].top === null) {
       readyToRise = false;
@@ -410,7 +421,25 @@ function verticalScrolling() {
         offset = 0;
       }
       drawLevel("top");
-      /* while (offset < 0) {
+
+      // During-fall check (interfering platform)
+      const skipping = [];
+      for (let i = 0; i <= offset; i++) {
+        skipping.push(getTile(originalX, i));
+      }
+      for (const tile of skipping) {
+        for (const sprite of tile) {
+          if (sprite.type === block || sprite.type === glass) {
+            console.log("you're getting sent back!");
+            drawLevel("top");
+            readyToFall = false;
+            stopIt = true;
+            return;
+          }
+        }
+      }
+      
+      while (offset < 0) {
         // Calculate offset
         offset = ((Math.ceil(velocity) + playerPosition.y) + 1);
         targetY = floor - offset;
@@ -420,7 +449,7 @@ function verticalScrolling() {
           drawLevel("top");
           return;
         }
-      } */
+      }
       /* if (offset <= 0) {
         platformY = null;
       } */
@@ -957,6 +986,9 @@ onInput("a", () => {
   } else {
     getFirst(player).x -= 1;
   }
+  if (stopIt) {
+    stopIt = false;
+  }
   jpb();
 });
 
@@ -977,6 +1009,9 @@ onInput("d", () => {
     }
   } else {
     getFirst(player).x += 1;
+  }
+  if (stopIt) {
+    stopIt = false;
   }
   jpb();
 });
