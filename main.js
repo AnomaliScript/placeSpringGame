@@ -307,6 +307,9 @@ and is just letting the gravity take them places
 */
 function verticalScrolling() {
   const playerPosition = getFirst(player);
+  const originalLevel = currentLevel;
+  const originalX = playerPosition.x;
+  const originalY = playerPosition.y;
   if (!reverseGravity) {
     if (targetY < 0 && levels[currentLevel].top !== null) {
       // Active movement (jump)
@@ -318,6 +321,7 @@ function verticalScrolling() {
     } else if (targetY == -1) {
       // Hitting the ceiling
       velocity = 1;
+      return;
     }
     // Guard clause to exit the function for if a player has just entered another level
     if (justEntered) {
@@ -325,13 +329,14 @@ function verticalScrolling() {
       return;
     }
     // Passive movement (gravity movement and acceleration)
-    if (levels[currentLevel].bottomPlat.includes(playerPosition.x) || 
-        targetY < floor || 
+    // Pre-fall check (falling conditions)
+    if (targetY < floor || 
         Math.floor(velocity) < 0 || 
         levels[currentLevel].bottom === null) {
       readyToFall = false;
       return;
     }
+    
     readyToFall = true;
     if (readyToFall) {
       console.log("falling!");
@@ -343,6 +348,22 @@ function verticalScrolling() {
         offset = 0;
       }
       drawLevel("bottom");
+      
+      tiles = getSkippedTiles();
+      for (const tile of tiles) {
+        for (const sprite of tile) {
+          if (sprite.type === block || sprite.type === glass) {
+            console.log("you're getting sent back!");
+            currentLevel = originalLevel;
+            setMap(levels[currentLevel].map);
+            resetFloor();
+            addSprite(originalX, originalY, player);
+            return;
+          }
+        }
+        }
+      }
+      
       while (offset >= height()) {
         // Calculate offset
         targetY = offset;
@@ -377,8 +398,7 @@ function verticalScrolling() {
       return;
     }
     // Passive movement (gravity movement and acceleration)
-    if (levels[currentLevel].topPlat.includes(playerPosition.x) || 
-        targetY > 0 || 
+    if (targetY > 0 || 
         Math.ceil(velocity) > 0 || 
         levels[currentLevel].top === null) {
       readyToRise = false;
@@ -395,7 +415,7 @@ function verticalScrolling() {
         offset = 0;
       }
       drawLevel("top");
-      /* while (offset < 0) {
+      while (offset < 0) {
         // Calculate offset
         offset = ((Math.ceil(velocity) + playerPosition.y) + 1);
         targetY = floor - offset;
@@ -405,7 +425,7 @@ function verticalScrolling() {
           drawLevel("top");
           return;
         }
-      } */
+      }
       /* if (offset <= 0) {
         platformY = null;
       } */
@@ -597,45 +617,47 @@ setInterval(() => {
     }
 
     // DEBUG TEXT AND OTHER DEBUGGING THINGS
-    if (debugMode == 0) {
-      for (const tile of tilesWith(red)) {for (const sprite of tile) {if (sprite.type === red) {sprite.remove();}}}
-      for (const tile of tilesWith(leftArrow)) {for (const sprite of tile) {if (sprite.type === leftArrow) {sprite.remove();}}}
-      for (const tile of tilesWith(rightArrow)) {for (const sprite of tile) {if (sprite.type === rightArrow) {sprite.remove();}}}
-    }
-    if (debugMode == 1) {
-      addText("mode: physics", { x: 3, y: 15, color: color`D` });
-      addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 3, y: 1, color: color`9` }); // Display the player coordinates
-      addText(`${Math.floor(velocity)}, ${Math.ceil(velocity)}`, { x: 13, y: 1, color: color`D` });
-      addText(`${floor}`, { x: 15, y: 7, color: color`5` });
-      addText(`${height()}`, { x: 14, y: 9, color: color`4` });
-      addText(`offset: ${offset}`, { x: 3, y: 9, color: color`7` });
-      addText(`flag: ${flag}`, { x: 3, y: 7, color: color`3` });
-      addText(`airborne: ${airborne}`, { x: 3, y: 3, color: color`1` });
-      addText(`${targetY}`, { x: 9, y: 5, color: color`H` });
-      addText(`${determineIfIsSolidNearPlayer()}`, { x: 3, y: 5, color: color`C` });
-      addText(`${platformY}`, { x: 12, y: 5, color: color`6` });
-      addText(`${justEntered}`, { x: 3, y: 11, color: color`8` });
-    } else if (debugMode == 2) {
-      addText("mode: scrolling", { x: 3, y: 15, color: color`D` });
-      addText(`save coords: ${getFirst(player).x}, ${getFirst(player).y}`, { x: 1, y: 5, color: color`L` });
-      if (Array.isArray(levels[currentLevel].left)) {
-        addText(`${levels[currentLevel].left[0]}`, { x: 3, y: 7, color: color`C` });
-        addText(`${levels[currentLevel].left[1]}`, { x: 3, y: 9, color: color`C` });
-      } else {
-        addText(`${levels[currentLevel].left}`, { x: 3, y: 7, color: color`C` });
-      }
-      if (Array.isArray(levels[currentLevel].right)) {
-        addText(`${levels[currentLevel].right[0]}`, { x: 3, y: 11, color: color`F` });
-        addText(`${levels[currentLevel].right[1]}`, { x: 3, y: 13, color: color`F` });
-      } else {
-        addText(`${levels[currentLevel].right}`, { x: 3, y: 11, color: color`F` });
-      }
-      if ('leftSplit' in levels[currentLevel]) {
-        addSprite(0, levels[currentLevel].leftSplit, leftArrow);
-      }
-      if ('rightSplit' in levels[currentLevel]) {
-        addSprite(width() - 1, levels[currentLevel].rightSplit, rightArrow);
-      }
+    switch (debugMode) {
+      case 1:
+        addText("mode: physics", { x: 3, y: 15, color: color`D` });
+        addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 3, y: 1, color: color`9` }); // Display the player coordinates
+        addText(`${Math.floor(velocity)}, ${Math.ceil(velocity)}`, { x: 13, y: 1, color: color`D` });
+        addText(`${floor}`, { x: 15, y: 7, color: color`5` });
+        addText(`${height()}`, { x: 14, y: 9, color: color`4` });
+        addText(`offset: ${offset}`, { x: 3, y: 9, color: color`7` });
+        addText(`flag: ${flag}`, { x: 3, y: 7, color: color`3` });
+        addText(`airborne: ${airborne}`, { x: 3, y: 3, color: color`1` });
+        addText(`${targetY}`, { x: 9, y: 5, color: color`H` });
+        addText(`${determineIfIsSolidNearPlayer()}`, { x: 3, y: 5, color: color`C` });
+        addText(`${platformY}`, { x: 12, y: 5, color: color`6` });
+        addText(`${justEntered}`, { x: 3, y: 11, color: color`8` });
+        break;
+      case 2:
+        addText("mode: scrolling", { x: 3, y: 15, color: color`D` });
+        addText(`save coords: ${getFirst(player).x}, ${getFirst(player).y}`, { x: 1, y: 5, color: color`L` });
+        if (Array.isArray(levels[currentLevel].left)) {
+          addText(`${levels[currentLevel].left[0]}`, { x: 3, y: 7, color: color`C` });
+          addText(`${levels[currentLevel].left[1]}`, { x: 3, y: 9, color: color`C` });
+        } else {
+          addText(`${levels[currentLevel].left}`, { x: 3, y: 7, color: color`C` });
+        }
+        if (Array.isArray(levels[currentLevel].right)) {
+          addText(`${levels[currentLevel].right[0]}`, { x: 3, y: 11, color: color`F` });
+          addText(`${levels[currentLevel].right[1]}`, { x: 3, y: 13, color: color`F` });
+        } else {
+          addText(`${levels[currentLevel].right}`, { x: 3, y: 11, color: color`F` });
+        }
+        if ('leftSplit' in levels[currentLevel]) {
+          addSprite(0, levels[currentLevel].leftSplit, leftArrow);
+        }
+        if ('rightSplit' in levels[currentLevel]) {
+          addSprite(width() - 1, levels[currentLevel].rightSplit, rightArrow);
+        }
+        break;
+      default:
+        for (const tile of tilesWith(red)) {for (const sprite of tile) {if (sprite.type === red) {sprite.remove();}}}
+        for (const tile of tilesWith(leftArrow)) {for (const sprite of tile) {if (sprite.type === leftArrow) {sprite.remove();}}}
+        for (const tile of tilesWith(rightArrow)) {for (const sprite of tile) {if (sprite.type === rightArrow) {sprite.remove();}}}
     }
   }
 }, frameRate);
@@ -649,42 +671,30 @@ const levels = [{
     top: null,
     bottom: null,
     map: map`
-.....b...........
 .................
-..bbb..bbbbb.....
-.b....b..........
-......bb.........
-........b........
-..bb....bb...b...
-....b....bb..b...
-......bb.....b...
-.......b......b..
-..............b..
-..bbg.....b...b..
-.bb.g.......bbb..
-..gdb............
-..gbb..b.........
-........bbbb.....`,
-    spawnPos: {x: 5, y: floor},
-    /*
-    topPlat is all of the x-coords that the player cannot enter the "top" level in
-    It references the blocks from "top" level but the values are hard-coded and stored 
-    in the current level because sprig can't access data from other levels
-    */
-    topPlat: [],
-    /*
-    bottomPlat is all of the x-coords that the player cannot enter the "bottom" level in
-    It references the "bottom" level but the values are hard-coded and stored 
-    in the current level because sprig can't access data from other levels
-    */
-    bottomPlat: []
+.......bb........
+.................
+.........bb......
+.................
+.......bb........
+..bbb............
+.................
+bb...bb..........
+.................
+........gg.......
+.................
+bb.........gg....
+.................
+bb............bb.
+.........ss......`,
+    spawnPos: {x: 5, y: floor}
   },
   {
     name: "plains",
     left: "trainStation",
     right: "origin",
     top: null,
-    bottom: null, //"caveEntrance",
+    bottom: "caveEntrance",
     map: map`
 ................
 ................
@@ -693,18 +703,41 @@ const levels = [{
 ................
 ................
 ................
+......bb........
+......gg........
+......bb........
+...bb....bb.....
+bb..........bb..
 .......bb.......
-.......gg.......
-.......bb.......
+....bb....bb....
+.bb..........bb.
+................`,
+    spawnPos: {x: 2, y: floor}
+  },
+  {
+    name: "caveEntrance",
+    left: null,
+    right: null,//"caveChamber"
+    top: "plains",
+    bottom: null,//"dungeon"
+    map: map`
+bbb..bbbbbbbbbbb
+.....bd......b..
+.....bbbb....i..
 ................
+...........s.b..
+...........b.i..
+bbbbbbbbb.......
+.....g..g..s.b..
+.....g..g..b.i..
+.....bbbb.......
+...........s....
+...........b....
+..bbbbbbbbbbbbbb
+..iiiiiiiiiiiiii
 ................
-................
-................
-................
-........ssssssss`,
-    spawnPos: {x: 2, y: floor},
-    topPlat: [],
-    bottomPlat: []
+..ssssssssssssss`,
+    spawnPos: {x: 2, y: floor}
   },
   {
     name: "stairs",
@@ -728,9 +761,7 @@ b.........gdg...
 ......b.........
 ...b.........b..
 ..........b.....`,
-    spawnPos: {x: 2, y: floor},
-    topPlat: [],
-    bottomPlat: []
+    spawnPos: {x: 2, y: floor}
   },
   {
     name: "childrensGallery",
@@ -753,9 +784,7 @@ g..bbb..g..
 ...........
 ......bb...
 ...bb....bb`,
-    spawnPos: {x: 2, y: floor},
-    topPlat: [],
-    bottomPlat: []
+    spawnPos: {x: 2, y: floor}
   },
   {
     name: "leapOfFaith",
@@ -781,9 +810,7 @@ bbbbbb...............bbbbbb
 ...........................
 ...........................
 ...........................`,
-    spawnPos: {x: 2, y: floor},
-    topPlat: [],
-    bottomPlat: []
+    spawnPos: {x: 2, y: floor}
   }
 ]
 
@@ -813,8 +840,8 @@ function drawLevel(direction) {
       addSprite(width() - 1, saveY, player);
       return;
     }
-    const originalSaveY = saveY; // For the player to go back to if the player is out of bounds
-    const originalLevel = currentLevel; // Also for the player to go back to if the player is out of bounds
+    const originalSaveY = saveY; // For the player to go back
+    const originalLevel = currentLevel; // Also for the player to go back
     const split = levels[currentLevel].leftSplit;
     if (saveY <= split) {
       // Checking for "splits" without a second level; that's how I make adjecent levels with height offsets
@@ -834,11 +861,23 @@ function drawLevel(direction) {
       saveY -= split + 1;
     }
     resetFloor();
+    // Safety Case
     if (saveY < 0 || saveY > floor) {
       currentLevel = convertToIndex(levels[originalLevel]);
       setMap(levels[currentLevel].map);
       resetFloor();
       addSprite(0, originalSaveY, player);
+    }
+    // CHECKING FOR BLOCKING PLATFORMS
+    for (const sprite of getTile(0, saveY)) {
+      if (sprite.type === block || sprite.type === glass) {
+        console.log("you're getting sent back!");
+        currentLevel = originalLevel;
+        setMap(levels[currentLevel].map);
+        resetFloor();
+        addSprite(0, originalSaveY, player);
+        return;
+      }
     }
     addSprite(width() - 1, saveY, player);
   } else if (direction === "right") { /////////////////////////Right case//////////////////////////
@@ -871,20 +910,21 @@ function drawLevel(direction) {
       saveY -= (split + 1);
     }
     resetFloor();
+    // Safety Case
     if (saveY < 0 || saveY > floor) {
       currentLevel = convertToIndex(levels[originalLevel]);
       setMap(levels[currentLevel].map);
       resetFloor();
       addSprite(0, originalSaveY, player);
     }
+    // CHECKING FOR BLOCKING PLATFORMS
     for (const sprite of getTile(0, saveY)) {
       if (sprite.type === block || sprite.type === glass) {
         console.log("you're getting sent back!");
         currentLevel = originalLevel;
         setMap(levels[currentLevel].map);
         resetFloor();
-        addSprite(width() - 1, 0, player);
-        console.log(`${levels[currentLevel].topPlat}`);
+        addSprite(width() - 1, originalSaveY, player);
         return;
       }
     }
