@@ -374,6 +374,12 @@ function verticalScrolling() {
       readyToFall = false;
       return;
     }
+
+    // Pre-fall check II (interfering platform in current map)
+    calculatePlatform(getSkippedTiles());
+    if (platformY !== null) {
+      return;
+    }
     
     readyToFall = true;
     if (readyToFall) {
@@ -387,7 +393,7 @@ function verticalScrolling() {
       }
       drawLevel("bottom");
 
-      // During-fall check (interfering platform)
+      // During-fall check (interfering platform on the other side)
       const skipping = [];
       for (let i = 0; i <= offset; i++) {
         skipping.push(getTile(originalX, i));
@@ -422,10 +428,18 @@ function verticalScrolling() {
       targetY = 0 + offset;
       return;
     }
-  } else { /************  (reverse/upside-down gravity starts here)  ***********************/
+  } else { /****************  (reverse/upside-down gravity starts here)  *******************/
     if (targetY > floor && levels[currentLevel].bottom !== null) {
       // Active movement (jump)
       drawLevel("bottom");
+      for (const sprite of getTile(originalX, 0)) {
+        if (sprite.type === block || sprite.type === glass) {
+          console.log("you're getting sent back!");
+          drawLevel("top");
+          velocity = -1;
+          return;
+        }
+      }
       justEntered = true;
       targetY = 0;
       return;
@@ -440,12 +454,19 @@ function verticalScrolling() {
     }
     // Passive movement (gravity movement and acceleration)
     if (stopIt || 
-        targetY >= 0 || 
+        targetY > 0 || 
         Math.ceil(velocity) > 0 || 
         levels[currentLevel].top === null) {
       readyToRise = false;
       return;
     }
+
+    // Pre-fall check II (interfering platform in current map)
+    calculatePlatform(getSkippedTiles());
+    if (platformY !== null) {
+      return;
+    }
+    
     readyToRise = true;
     if (readyToRise) {
       console.log("rising!");
@@ -460,14 +481,14 @@ function verticalScrolling() {
 
       // During-fall check (interfering platform)
       const skipping = [];
-      for (let i = 0; i <= offset; i++) {
-        skipping.push(getTile(originalX, i));
+      for (let i = 0; i >= offset; i--) {
+        skipping.push(getTile(originalX, floor - i));
       }
       for (const tile of skipping) {
         for (const sprite of tile) {
           if (sprite.type === block || sprite.type === glass) {
             console.log("you're getting sent back!");
-            drawLevel("top");
+            drawLevel("bottom");
             readyToFall = false;
             stopIt = true;
             return;
@@ -593,6 +614,27 @@ setInterval(() => {
     if (reverseGravity) {
       targetY = playerPosition.y + Math.ceil(velocity);
     }
+
+    // HOVER CASES
+    // DEATH case :skull:
+    let spikes = getAll(spike);
+    for (let i = 0; i < spikes.length; i++) {
+      if (playerPosition.x == spikes[i].x && playerPosition.y == spikes[i].y) {
+        console.log(`Death: (${playerPosition.x}, ${playerPosition.y}) matches (${spikes[i].x}, ${spikes[i].y})`);
+        getFirst(player).x = levels[currentLevel].spawnPos.x;
+        getFirst(player).y = levels[currentLevel].spawnPos.y;
+        break;
+      }
+    }
+    let spikesFlipped = getAll(spikeFlipped);
+    for (let i = 0; i < spikesFlipped.length; i++) {
+      if (playerPosition.x == spikesFlipped[i].x && playerPosition.y == spikesFlipped[i].y) {
+        console.log(`Death: (${playerPosition.x}, ${playerPosition.y}) matches (${spikes[i].x}, ${spikes[i].y})`);
+        getFirst(player).x = levels[currentLevel].spawnPos.x;
+        getFirst(player).y = levels[currentLevel].spawnPos.y;
+        break;
+      }
+    }
     
     // Vertical Scrolling! (targetY modification)
     verticalScrolling();
@@ -658,26 +700,6 @@ setInterval(() => {
         } else {
           framesUntilGlassDisappears -= 1;
         }
-      }
-    }
-    
-    // HOVER CASES
-    // DEATH case :skull:
-    let spikes = getAll(spike);
-    for (let i = 0; i < spikes.length; i++) {
-      if (playerPosition.x == spikes[i].x && playerPosition.y == spikes[i].y) {
-        console.log(`(${playerPosition.x}, ${playerPosition.y}) matches (${spikes[i].x}, ${spikes[i].y})`);
-        //getFirst(player).x = levels[currentLevel].spawnPos.x;
-        //getFirst(player).y = levels[currentLevel].spawnPos.y;
-        break;
-      }
-    }
-    let spikesFlipped = getAll(spikeFlipped);
-    for (let i = 0; i < spikesFlipped.length; i++) {
-      if (playerPosition.x == spikesFlipped[i].x && playerPosition.y == spikesFlipped[i].y) {
-        getFirst(player).x = levels[currentLevel].spawnPos.x;
-        getFirst(player).y = levels[currentLevel].spawnPos.y;
-        break;
       }
     }
 
@@ -793,7 +815,7 @@ bbb..bbbbbbbbbbb
 .....bbbbbbbbb..
 ...........g.i..
 ...........b.d..
-...ss........b..
+.............b..
 bbbbbbbbb..s.i..
 ...i.g..g..b....
 .s...g..g....b..
