@@ -419,7 +419,7 @@ function verticalScrolling() {
       //if (offset >= floor) {
         //platformY = null;
       //}
-      targetY = offset;
+      targetY = 0 + offset;
       return;
     }
   } else { /************  (reverse/upside-down gravity starts here)  ***********************/
@@ -524,9 +524,9 @@ function calculatePlatform(allTiles) {
   for (const tile of allTiles) {
     for (const sprite of tile) {
       if (sprite.type === block || sprite.type === glass) {
-        // console.log(`${sprite.x}, ${sprite.y}`);
+        //console.log(`${sprite.x}, ${sprite.y}`);
         platformY = sprite.y;
-        addSprite(getFirst(player).x, sprite.y - 1, target);
+        addSprite(getFirst(player).x, sprite.y - 1, red);
         return;
       }
     }
@@ -571,6 +571,10 @@ let game = {
 // Gravity
 setInterval(() => {
   if (game.isRunning()) {
+    // Clearing debugging tiles
+    for (const tile of tilesWith(red)) {for (const sprite of tile) {if (sprite.type === red) {sprite.remove();}}}
+    for (const tile of tilesWith(target)) {for (const sprite of tile) {if (sprite.type === target) {sprite.remove();}}}
+    
     // Floor height (length) update
     resetFloor();
     // troubleshooting addText stuff
@@ -590,14 +594,16 @@ setInterval(() => {
       targetY = playerPosition.y + Math.ceil(velocity);
     }
     
-    // Vertical Scrolling! (CONTROL THE targetY AT ALL COSTS)
+    // Vertical Scrolling! (targetY modification)
     verticalScrolling();
-    // jpb is only for active/"jumping" movement
+    // jpb is only for active/"jumping" movement (stands for "jumping player bug")
     jpb();
-
-
+    
     // WHERE PLAYER MOVEMENT WITH targetY HAPPENS (vertically, ofc)
     calculatePlatform(getSkippedTiles());
+    if (platformY != null) {
+      console.log(`platY = ${platformY}`);
+    }
     if (!reverseGravity) {
       if (platformY !== null) {
         getFirst(player).y = platformY - 1; // Adjust as needed for player size
@@ -625,13 +631,9 @@ setInterval(() => {
     if ((determineIfIsSolidNearPlayer() && !reverseGravity) || regularStop) {
       velocity = 0;
       airborne = false; // Player can jump on platforms
-      for (const tile of tilesWith(red)) {for (const sprite of tile) {if (sprite.type === red) {sprite.remove();}}}
-      for (const tile of tilesWith(target)) {for (const sprite of tile) {if (sprite.type === target) {sprite.remove();}}}
     } else if ((determineIfIsSolidNearPlayer() && reverseGravity) || reverseStop) {
       velocity = 0;
       airborne = false;
-      for (const tile of tilesWith(red)) {for (const sprite of tile) {if (sprite.type === red) {sprite.remove();}}}
-      for (const tile of tilesWith(target)) {for (const sprite of tile) {if (sprite.type === target) {sprite.remove();}}}
     } else {
       airborne = true;
     }
@@ -664,8 +666,9 @@ setInterval(() => {
     let spikes = getAll(spike);
     for (let i = 0; i < spikes.length; i++) {
       if (playerPosition.x == spikes[i].x && playerPosition.y == spikes[i].y) {
-        getFirst(player).x = levels[currentLevel].spawnPos.x;
-        getFirst(player).y = levels[currentLevel].spawnPos.y;
+        console.log(`(${playerPosition.x}, ${playerPosition.y}) matches (${spikes[i].x}, ${spikes[i].y})`);
+        //getFirst(player).x = levels[currentLevel].spawnPos.x;
+        //getFirst(player).y = levels[currentLevel].spawnPos.y;
         break;
       }
     }
@@ -685,7 +688,7 @@ setInterval(() => {
         addText(`${getFirst(player).x}, ${getFirst(player).y}`, { x: 3, y: 1, color: color`9` }); // Display the player coordinates
         addText(`${Math.floor(velocity)}, ${Math.ceil(velocity)}, ${velocity}`, { x: 9, y: 1, color: color`D` });
         addText(`${floor}`, { x: 15, y: 7, color: color`5` });
-        addText(`${height()}`, { x: 14, y: 9, color: color`4` });
+        addText(`${height()}`, { x: 14, y: 11, color: color`4` });
         addText(`offset: ${offset}`, { x: 3, y: 9, color: color`7` });
         addText(`flag: ${flag}`, { x: 3, y: 7, color: color`3` });
         addText(`airborne: ${airborne}`, { x: 3, y: 3, color: color`1` });
