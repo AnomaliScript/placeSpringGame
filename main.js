@@ -432,6 +432,14 @@ function verticalScrolling() {
     if (targetY > floor && levels[currentLevel].bottom !== null) {
       // Active movement (jump)
       drawLevel("bottom");
+      for (const sprite of getTile(originalX, 0)) {
+        if (sprite.type === block || sprite.type === glass) {
+          console.log("you're getting sent back!");
+          drawLevel("top");
+          velocity = -1;
+          return;
+        }
+      }
       justEntered = true;
       targetY = 0;
       return;
