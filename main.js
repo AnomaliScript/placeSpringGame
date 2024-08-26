@@ -579,6 +579,31 @@ function determineIfIsSolidNearPlayer() {
   return localIsSolidNearPlayer;
 }
 
+// Death checking function
+function deathCheck() {
+  const playerPosition = getFirst(player);
+  let spikes = getAll(spike);
+  for (let i = 0; i < spikes.length; i++) {
+    if (playerPosition.x == spikes[i].x && playerPosition.y == spikes[i].y) {
+      console.log(`Death: (${playerPosition.x}, ${playerPosition.y}) matches (${spikes[i].x}, ${spikes[i].y})`);
+      getFirst(player).x = levels[currentLevel].spawnPos.x;
+      getFirst(player).y = levels[currentLevel].spawnPos.y;
+      console.log(`going to: ${getFirst(player).x}, ${getFirst(player).y}`);
+      return;
+    }
+  }
+  let spikesFlipped = getAll(spikeFlipped);
+  for (let i = 0; i < spikesFlipped.length; i++) {
+    if (playerPosition.x == spikesFlipped[i].x && playerPosition.y == spikesFlipped[i].y) {
+      console.log(`Death: (${playerPosition.x}, ${playerPosition.y}) matches (${spikes[i].x}, ${spikes[i].y})`);
+      getFirst(player).x = levels[currentLevel].spawnPos.x;
+      getFirst(player).y = levels[currentLevel].spawnPos.y;
+      console.log(`Going to: ${getFirst(player).x}, ${getFirst(player).y}`);
+      return;
+    }
+  }
+}
+
 // Game Loop
 let game = {
   running: true,
@@ -614,8 +639,6 @@ setInterval(() => {
     if (reverseGravity) {
       targetY = playerPosition.y + Math.ceil(velocity);
     }
-
-    
     
     // Vertical Scrolling! (targetY modification)
     verticalScrolling();
@@ -628,27 +651,7 @@ setInterval(() => {
       console.log(`platY = ${platformY}`);
     }
 
-    // HOVER CASES
-    // DEATH case :skull:
-    let spikes = getAll(spike);
-    for (let i = 0; i < spikes.length; i++) {
-      if (playerPosition.x == spikes[i].x && playerPosition.y == spikes[i].y) {
-        console.log(`Death: (${playerPosition.x}, ${playerPosition.y}) matches (${spikes[i].x}, ${spikes[i].y})`);
-        getFirst(player).x = levels[currentLevel].spawnPos.x;
-        platformY = levels[currentLevel].spawnPos.y + 1;
-        console.log(`${getFirst(player).y}`);
-        break;
-      }
-    }
-    let spikesFlipped = getAll(spikeFlipped);
-    for (let i = 0; i < spikesFlipped.length; i++) {
-      if (playerPosition.x == spikesFlipped[i].x && playerPosition.y == spikesFlipped[i].y) {
-        console.log(`Death: (${playerPosition.x}, ${playerPosition.y}) matches (${spikes[i].x}, ${spikes[i].y})`);
-        getFirst(player).x = levels[currentLevel].spawnPos.x;
-        platformY = levels[currentLevel].spawnPos.y + 1;
-        break;
-      }
-    }
+    
     
     if (!reverseGravity) {
       if (platformY !== null) {
@@ -696,6 +699,9 @@ setInterval(() => {
       readyToRise = false;
     }
 
+    // HOVER CASES
+    deathCheck();
+
     // Sweeping up the glass
     for (const sprite of getAll(glassBroken)) {
       if (sprite.type === glassBroken) {
@@ -722,6 +728,7 @@ setInterval(() => {
         addText(`${determineIfIsSolidNearPlayer()}`, { x: 3, y: 5, color: color`C` });
         addText(`${platformY}`, { x: 12, y: 5, color: color`6` });
         addText(`${justEntered}`, { x: 3, y: 11, color: color`8` });
+        addText(`${levels[currentLevel].spawnPos.x}, ${levels[currentLevel].spawnPos.y}`, { x: 8, y: 11, color: color`C` });
         addSprite(levels[currentLevel].spawnPos.x, levels[currentLevel].spawnPos.y, spm);
         break;
       case 2:
@@ -827,7 +834,7 @@ bbbbbbbbb..s.i..
 ..ii.......b....
 .......s........
 ..bbbbbbbbbbbbbb
-..iiiiiiiiiiiiii
+..iiiii.iiiiiiii
 ................
 ..ssssssssssssss`,
     spawnPos: {x: 2, y: 5}
