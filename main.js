@@ -22,6 +22,7 @@ let currentLevel = 0;
 
 // Debugging Sprites
 const red = "e";
+const target = "t";
 const leftArrow = "q";
 const rightArrow = "x";
 const spm /* "spawn point marker" */ = "m";
@@ -213,6 +214,23 @@ LLLLLLLLLLLLLLLL
 3333333333333333
 3333333333333333
 3333333333333333`],
+  [target, bitmap`
+C..............C
+.C............C.
+..C..........C..
+...C........C...
+....C......C....
+.....C....C.....
+......C..C......
+.......CC.......
+.......CC.......
+......C..C......
+.....C....C.....
+....C......C....
+...C........C...
+..C..........C..
+.C............C.
+C..............C`],
   [leftArrow, bitmap`
 ................
 ................
@@ -493,6 +511,11 @@ function getSkippedTiles() {
       skipped.push(getTile(playerPosition.x, scanY));
     }
   }
+  /* for (let i = 1; i <= skipped.length; i += 1) {
+    try {
+      addSprite(playerPosition.x, playerPosition.y + i, red);
+    } catch (error) {}
+  } */
   return skipped;
 }
 
@@ -503,7 +526,7 @@ function calculatePlatform(allTiles) {
       if (sprite.type === block || sprite.type === glass) {
         // console.log(`${sprite.x}, ${sprite.y}`);
         platformY = sprite.y;
-        // addSprite(getFirst(player).x, sprite.y, red);
+        addSprite(getFirst(player).x, sprite.y - 1, target);
         return;
       }
     }
@@ -566,15 +589,6 @@ setInterval(() => {
     if (reverseGravity) {
       targetY = playerPosition.y + Math.ceil(velocity);
     }
-
-    // Identify the platform position for the player to land on
-    /* for (const tile of tilesWith(red)) {
-      for (const sprite of tile) {
-        if (sprite.type === red) {i
-          sprite.remove();
-        }
-      }
-    } */
     
     // Vertical Scrolling! (CONTROL THE targetY AT ALL COSTS)
     verticalScrolling();
@@ -611,9 +625,13 @@ setInterval(() => {
     if ((determineIfIsSolidNearPlayer() && !reverseGravity) || regularStop) {
       velocity = 0;
       airborne = false; // Player can jump on platforms
+      for (const tile of tilesWith(red)) {for (const sprite of tile) {if (sprite.type === red) {sprite.remove();}}}
+      for (const tile of tilesWith(target)) {for (const sprite of tile) {if (sprite.type === target) {sprite.remove();}}}
     } else if ((determineIfIsSolidNearPlayer() && reverseGravity) || reverseStop) {
       velocity = 0;
       airborne = false;
+      for (const tile of tilesWith(red)) {for (const sprite of tile) {if (sprite.type === red) {sprite.remove();}}}
+      for (const tile of tilesWith(target)) {for (const sprite of tile) {if (sprite.type === target) {sprite.remove();}}}
     } else {
       airborne = true;
     }
@@ -648,6 +666,7 @@ setInterval(() => {
       if (playerPosition.x == spikes[i].x && playerPosition.y == spikes[i].y) {
         getFirst(player).x = levels[currentLevel].spawnPos.x;
         getFirst(player).y = levels[currentLevel].spawnPos.y;
+        break;
       }
     }
     let spikesFlipped = getAll(spikeFlipped);
@@ -655,6 +674,7 @@ setInterval(() => {
       if (playerPosition.x == spikesFlipped[i].x && playerPosition.y == spikesFlipped[i].y) {
         getFirst(player).x = levels[currentLevel].spawnPos.x;
         getFirst(player).y = levels[currentLevel].spawnPos.y;
+        break;
       }
     }
 
@@ -700,7 +720,6 @@ setInterval(() => {
         for (const tile of tilesWith(spm)) {for (const sprite of tile) {if (sprite.type === spm) {sprite.remove();}}}
         break;
       default:
-        for (const tile of tilesWith(red)) {for (const sprite of tile) {if (sprite.type === red) {sprite.remove();}}}
         for (const tile of tilesWith(leftArrow)) {for (const sprite of tile) {if (sprite.type === leftArrow) {sprite.remove();}}}
         for (const tile of tilesWith(rightArrow)) {for (const sprite of tile) {if (sprite.type === rightArrow) {sprite.remove();}}}
     }
@@ -771,7 +790,7 @@ bbb..bbbbbbbbbbb
 .....bbbbbbbbb..
 ...........g.i..
 ...........b.d..
-.............b..
+...ss........b..
 bbbbbbbbb..s.i..
 ...i.g..g..b....
 .s...g..g....b..
