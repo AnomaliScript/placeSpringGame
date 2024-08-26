@@ -615,26 +615,7 @@ setInterval(() => {
       targetY = playerPosition.y + Math.ceil(velocity);
     }
 
-    // HOVER CASES
-    // DEATH case :skull:
-    let spikes = getAll(spike);
-    for (let i = 0; i < spikes.length; i++) {
-      if (playerPosition.x == spikes[i].x && playerPosition.y == spikes[i].y) {
-        console.log(`Death: (${playerPosition.x}, ${playerPosition.y}) matches (${spikes[i].x}, ${spikes[i].y})`);
-        getFirst(player).x = levels[currentLevel].spawnPos.x;
-        getFirst(player).y = levels[currentLevel].spawnPos.y;
-        break;
-      }
-    }
-    let spikesFlipped = getAll(spikeFlipped);
-    for (let i = 0; i < spikesFlipped.length; i++) {
-      if (playerPosition.x == spikesFlipped[i].x && playerPosition.y == spikesFlipped[i].y) {
-        console.log(`Death: (${playerPosition.x}, ${playerPosition.y}) matches (${spikes[i].x}, ${spikes[i].y})`);
-        getFirst(player).x = levels[currentLevel].spawnPos.x;
-        getFirst(player).y = levels[currentLevel].spawnPos.y;
-        break;
-      }
-    }
+    
     
     // Vertical Scrolling! (targetY modification)
     verticalScrolling();
@@ -646,6 +627,29 @@ setInterval(() => {
     if (platformY != null) {
       console.log(`platY = ${platformY}`);
     }
+
+    // HOVER CASES
+    // DEATH case :skull:
+    let spikes = getAll(spike);
+    for (let i = 0; i < spikes.length; i++) {
+      if (playerPosition.x == spikes[i].x && playerPosition.y == spikes[i].y) {
+        console.log(`Death: (${playerPosition.x}, ${playerPosition.y}) matches (${spikes[i].x}, ${spikes[i].y})`);
+        getFirst(player).x = levels[currentLevel].spawnPos.x;
+        platformY = levels[currentLevel].spawnPos.y + 1;
+        console.log(`${getFirst(player).y}`);
+        break;
+      }
+    }
+    let spikesFlipped = getAll(spikeFlipped);
+    for (let i = 0; i < spikesFlipped.length; i++) {
+      if (playerPosition.x == spikesFlipped[i].x && playerPosition.y == spikesFlipped[i].y) {
+        console.log(`Death: (${playerPosition.x}, ${playerPosition.y}) matches (${spikes[i].x}, ${spikes[i].y})`);
+        getFirst(player).x = levels[currentLevel].spawnPos.x;
+        platformY = levels[currentLevel].spawnPos.y + 1;
+        break;
+      }
+    }
+    
     if (!reverseGravity) {
       if (platformY !== null) {
         getFirst(player).y = platformY - 1; // Adjust as needed for player size
