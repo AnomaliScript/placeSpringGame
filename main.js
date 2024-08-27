@@ -39,8 +39,9 @@ let platformY;
 let targetY;
 let readyToFall = false;
 let justEntered = false;
-let stopIt = false; // stopIt IS ONLY USEFUL IF THERE ARE NO MOVING OBJECTS UNDERNEATH
+let stopIt = false; // stopIt IS ONLY USEFUL IF THERE ARE NO MOVING OBJECTS UNDERNEATH (the current level)
 let offset;
+let atWhichGlassBreaks = 2;
 let frameRate = 60;
 
 // Upside-Down Physics
@@ -532,11 +533,11 @@ function getSkippedTiles() {
       skipped.push(getTile(playerPosition.x, scanY));
     }
   }
-  /* for (let i = 1; i <= skipped.length; i += 1) {
+  /*for (let i = 1; i <= skipped.length; i += 1) {
     try {
       addSprite(playerPosition.x, playerPosition.y + i, red);
     } catch (error) {}
-  } */
+  } */ //Broken debug tool :(
   return skipped;
 }
 
@@ -655,6 +656,7 @@ setInterval(() => {
     
     if (!reverseGravity) {
       if (platformY !== null) {
+        breakGlassBottom();
         getFirst(player).y = platformY - 1; // Adjust as needed for player size
         velocity = 0;
       } else {
@@ -662,6 +664,7 @@ setInterval(() => {
       }
     } else {
       if (platformY !== null) {
+        breakGlassBottom();
         getFirst(player).y = platformY + 1; // Adjust as needed for player size
         velocity = 0;
       } else {
@@ -707,6 +710,7 @@ setInterval(() => {
     if (death === true) {
       getFirst(player).remove();
       addSprite(levels[currentLevel].spawnPos.x, levels[currentLevel].spawnPos.y, player);
+      reverseGravity = false;
     }
     
     // Sweeping up the glass
@@ -838,7 +842,7 @@ bbb..bbbbbbbbbbb
 bbbbbbbbb....i..
 ...i.g..g.......
 .s...g..g..s.b..
-bbbbbbbbb..b.i..
+bbbbbbbbb.bb.i..
 ..ii............
 .......s........
 ..bbbbbbbbbbbbbb
@@ -1148,6 +1152,38 @@ function breakGlass() {
         addSprite(scanningX, scanningY, glassBroken);
         framesUntilGlassDisappears = 3;
       }
+    }
+  }
+}
+
+// breaking glass (bottom)
+function breakGlassBottom() {
+  const playerPosition = getFirst(player);
+  if (!reverseGravity) {
+    // Normal Case
+    // But first, velocity "power check" to see if the player can "break" the glass
+    if (Math.floor(velocity) < atWhichGlassBreaks) {
+      return;
+    }
+    for (const sprite in getTile(playerPosition.x, playerPosition.y + 1)) {
+      if (sprite.type === glass) {
+        sprite.remove();
+        addSprite(playerPosition.x, playerPosition.y + 1, glassBroken);
+        framesUntilGlassDisappears = 3;
+      } 
+    }
+  } else {
+    // Reverse Gravity
+    // But first, velocity "power check" to see if the player can "break" the glass
+    if (Math.abs(Math.ceil(velocity)) < atWhichGlassBreaks) {
+      return;
+    }
+    for (const sprite in getTile(playerPosition.x, playerPosition.y - 1)) {
+      if (sprite.type === glass) {
+        sprite.remove();
+        addSprite(playerPosition.x, playerPosition.y - 1, glassBroken);
+        framesUntilGlassDisappears = 3;
+      } 
     }
   }
 }
