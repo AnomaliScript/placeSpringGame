@@ -544,7 +544,10 @@ function getSkippedTiles() {
 function calculatePlatform(allTiles) {
   for (const tile of allTiles) {
     for (const sprite of tile) {
-      if (sprite.type === block || sprite.type === glass) {
+      if (sprite.type === spike || sprite.type === spikeFlipped) {
+        death = true;
+        return;
+      } else if (sprite.type === block || sprite.type === glass) {
         //console.log(`${sprite.x}, ${sprite.y}`);
         platformY = sprite.y;
         addSprite(getFirst(player).x, sprite.y - 1, red);
@@ -668,7 +671,8 @@ setInterval(() => {
 
     // Death check
     deathCheck();
-    
+
+    // The "bump your head becuase you jumped so hard" flag
     flag = false;
     jpb();
 
@@ -701,8 +705,8 @@ setInterval(() => {
 
     // Death override (if needed)
     if (death === true) {
-      getFirst(player).x = levels[currentLevel].spawnPos.x;
-      getFirst(player).y = levels[currentLevel].spawnPos.y;
+      getFirst(player).remove();
+      addSprite(levels[currentLevel].spawnPos.x, levels[currentLevel].spawnPos.y, player);
     }
     
     // Sweeping up the glass
@@ -729,6 +733,7 @@ setInterval(() => {
         addText(`airborne: ${airborne}`, { x: 3, y: 3, color: color`1` });
         addText(`${targetY}`, { x: 9, y: 5, color: color`H` });
         addText(`${determineIfIsSolidNearPlayer()}`, { x: 3, y: 5, color: color`C` });
+        addText(`${death}`, { x: 13, y: 9, color: color`F` });
         addText(`${platformY}`, { x: 12, y: 5, color: color`6` });
         addText(`${justEntered}`, { x: 3, y: 11, color: color`8` });
         addText(`${levels[currentLevel].spawnPos.x}, ${levels[currentLevel].spawnPos.y}`, { x: 8, y: 11, color: color`C` });
@@ -832,9 +837,9 @@ bbb..bbbbbbbbbbb
 .............b..
 bbbbbbbbb....i..
 ...i.g..g.......
-.s...g..g....b..
-bbbbbbbbb..s.i..
-..ii.......b....
+.s...g..g..s.b..
+bbbbbbbbb..b.i..
+..ii............
 .......s........
 ..bbbbbbbbbbbbbb
 ..iiiii.iiiiiiii
@@ -918,7 +923,6 @@ bbbbbb...............bbbbbb
 ]
 
 // I'm using a levelName to levelIndex converter because I want to use level names :)
-
 // This is the actual converter
 function convertToIndex(name) {
   return levels.findIndex(level => level.name === name);
@@ -1118,7 +1122,6 @@ onInput("l", () => {
   //jpb();
 });
 
-// i cases
 // gravity switch
 function gravitySwitching() {
   if (true) /*ability condition to be here soon*/ {
