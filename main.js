@@ -579,29 +579,28 @@ function determineIfIsSolidNearPlayer() {
   return localIsSolidNearPlayer;
 }
 
+let death = false;
+
 // Death checking function
 function deathCheck() {
   const playerPosition = getFirst(player);
   let spikes = getAll(spike);
   for (let i = 0; i < spikes.length; i++) {
-    if (playerPosition.x == spikes[i].x && playerPosition.y == spikes[i].y) {
+    if (playerPosition.x === spikes[i].x && playerPosition.y === spikes[i].y) {
       console.log(`Death: (${playerPosition.x}, ${playerPosition.y}) matches (${spikes[i].x}, ${spikes[i].y})`);
-      getFirst(player).x = levels[currentLevel].spawnPos.x;
-      getFirst(player).y = levels[currentLevel].spawnPos.y;
-      console.log(`going to: ${getFirst(player).x}, ${getFirst(player).y}`);
+      death = true;
       return;
     }
   }
   let spikesFlipped = getAll(spikeFlipped);
   for (let i = 0; i < spikesFlipped.length; i++) {
-    if (playerPosition.x == spikesFlipped[i].x && playerPosition.y == spikesFlipped[i].y) {
+    if (playerPosition.x === spikesFlipped[i].x && playerPosition.y === spikesFlipped[i].y) {
       console.log(`Death: (${playerPosition.x}, ${playerPosition.y}) matches (${spikes[i].x}, ${spikes[i].y})`);
-      getFirst(player).x = levels[currentLevel].spawnPos.x;
-      getFirst(player).y = levels[currentLevel].spawnPos.y;
-      console.log(`Going to: ${getFirst(player).x}, ${getFirst(player).y}`);
+      death = true;
       return;
     }
   }
+  death = false;
 }
 
 // Game Loop
@@ -650,8 +649,6 @@ setInterval(() => {
     if (platformY != null) {
       console.log(`platY = ${platformY}`);
     }
-
-    
     
     if (!reverseGravity) {
       if (platformY !== null) {
@@ -669,10 +666,13 @@ setInterval(() => {
       }
     }
 
+    // Death check
+    deathCheck();
+    
     flag = false;
     jpb();
 
-    // airborne logic (this is where A LOT of bugs have happened):
+    // airborne logic (this is where A LOT of bugs have happened with scrolling):
     // !reverseGravity = gravity case
     // !readyTo___ = checks for a level underneath and if the player is on the floor (or approaching it)
     const regularStop = !reverseGravity && !readyToFall && !justEntered && getFirst(player).y == floor;
@@ -699,9 +699,12 @@ setInterval(() => {
       readyToRise = false;
     }
 
-    // HOVER CASES
-    deathCheck();
-
+    // Death override (if needed)
+    if (death === true) {
+      getFirst(player).x = levels[currentLevel].spawnPos.x;
+      getFirst(player).y = levels[currentLevel].spawnPos.y;
+    }
+    
     // Sweeping up the glass
     for (const sprite of getAll(glassBroken)) {
       if (sprite.type === glassBroken) {
@@ -824,11 +827,11 @@ bb..........bb..
 bbb..bbbbbbbbbbb
 .....bd.........
 .....bbbbbbbbb..
-...........g.i..
-...........b.d..
+.............i..
+.............d..
 .............b..
-bbbbbbbbb..s.i..
-...i.g..g..b....
+bbbbbbbbb....i..
+...i.g..g.......
 .s...g..g....b..
 bbbbbbbbb..s.i..
 ..ii.......b....
