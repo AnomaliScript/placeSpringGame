@@ -552,6 +552,16 @@ function calculatePlatform(allTiles) {
       } else if (sprite.type === block || sprite.type === glass) {
         //console.log(`${sprite.x}, ${sprite.y}`);
         platformY = sprite.y;
+        if ((!reverseGravity && Math.abs(Math.floor(velocity)) >= atWhichGlassBreaks) ||
+          (reverseGravity && Math.abs(Math.ceil(velocity)) >= atWhichGlassBreaks)) {
+          if (sprite.type === glass) {
+            console.log("it's happening!");
+            sprite.remove();
+            addSprite(playerPosition.x, platformY, glassBroken);
+            framesUntilGlassDisappears = 3;
+          }
+        }
+        // breakGlassBottom(getTile(getFirst(player).x, sprite.y));
         addSprite(getFirst(player).x, sprite.y - 1, red);
         return;
       }
@@ -559,6 +569,45 @@ function calculatePlatform(allTiles) {
   }
   platformY = null;
   return;
+}
+
+// breaking glass (bottom)
+// param name is the same as the variable name that was passed in
+function breakGlassBottom(tile) {
+  const playerPosition = getFirst(player);
+  if (!reverseGravity) {
+    // Normal Case
+    // But first, velocity "power check" to see if the player can "break" the glass
+    if (Math.abs(Math.floor(velocity)) < atWhichGlassBreaks) {
+      glassIntact = true;
+      return;
+    }
+    glassIntact = false;
+    clearTile(tile.x, tile.y);
+    for (const sprite in tile) {
+      if (sprite.type === glass) {
+        console.log("it's happening!");
+        sprite.remove();
+        addSprite(playerPosition.x, playerPosition.y + 1, glassBroken);
+        framesUntilGlassDisappears = 3;
+      } 
+    }
+  } else {
+    // Reverse Gravity
+    // But first, velocity "power check" to see if the player can "break" the glass
+    if (Math.abs(Math.ceil(velocity)) < atWhichGlassBreaks) {
+      glassIntact = true;
+      return;
+    }
+    glassIntact = false;
+    for (const sprite in getTile(playerPosition.x, playerPosition.y - 1)) {
+      if (sprite.type === glass) {
+        sprite.remove();
+        addSprite(playerPosition.x, playerPosition.y - 1, glassBroken);
+        framesUntilGlassDisappears = 3;
+      } 
+    }
+  }
 }
 
 // Determine if there is a block on top of the the player
@@ -657,7 +706,6 @@ setInterval(() => {
     
     if (!reverseGravity) {
       if (platformY !== null) {
-        breakGlassBottom();
         getFirst(player).y = platformY - 1; // Adjust as needed for player size
         velocity = 0;
       } else {
@@ -665,7 +713,6 @@ setInterval(() => {
       }
     } else {
       if (platformY !== null) {
-        breakGlassBottom();
         getFirst(player).y = platformY + 1; // Adjust as needed for player size
         velocity = 0;
       } else {
@@ -726,7 +773,6 @@ setInterval(() => {
     }
 
     for (const sprite in getTile(playerPosition.x, playerPosition.y + 1)) {
-      addSprite(playerPosition.x, playerPosition.y + 1, glass);
       if (sprite.type === glass) {
         sprite.remove();
         addSprite(playerPosition.x, playerPosition.y + 1, glassBroken);
@@ -1163,43 +1209,6 @@ function breakGlass() {
         addSprite(scanningX, scanningY, glassBroken);
         framesUntilGlassDisappears = 3;
       }
-    }
-  }
-}
-
-// breaking glass (bottom)
-function breakGlassBottom() {
-  const playerPosition = getFirst(player);
-  if (!reverseGravity) {
-    // Normal Case
-    // But first, velocity "power check" to see if the player can "break" the glass
-    if (Math.abs(Math.floor(velocity)) < atWhichGlassBreaks) {
-      glassIntact = true;
-      return;
-    }
-    glassIntact = false;
-    for (const sprite in getTile(playerPosition.x, playerPosition.y + 1)) {
-      addSprite(playerPosition.x, playerPosition.y + 1, red);
-      if (sprite.type === glass) {
-        sprite.remove();
-        addSprite(playerPosition.x, playerPosition.y + 1, glassBroken);
-        framesUntilGlassDisappears = 3;
-      } 
-    }
-  } else {
-    // Reverse Gravity
-    // But first, velocity "power check" to see if the player can "break" the glass
-    if (Math.abs(Math.ceil(velocity)) < atWhichGlassBreaks) {
-      glassIntact = true;
-      return;
-    }
-    glassIntact = false;
-    for (const sprite in getTile(playerPosition.x, playerPosition.y - 1)) {
-      if (sprite.type === glass) {
-        sprite.remove();
-        addSprite(playerPosition.x, playerPosition.y - 1, glassBroken);
-        framesUntilGlassDisappears = 3;
-      } 
     }
   }
 }
