@@ -559,22 +559,27 @@ function calculatePlatform(allTiles) {
       } else if (sprite.type === glass) {
         platformY = sprite.y;
         glassSpotted(sprite.x, sprite.y);
+        console.log(`${sprite.x} ${sprite.y}`);
+        console.log("glass spotted!");
         return;
       } else if (sprite.type === block) {
         platformY = sprite.y;
+        console.log("block spotted!");
         return;
       }
-      addSprite(getFirst(player).x, sprite.y - 1, red);
     }
   }
+  let tailTileX = allTiles[allTiles.length - 1].x;
+  let tailTileY = allTiles[allTiles.length - 1].y + 1;
+  // addSprite(tailTileX, tailTileY, red);
   // 1 extra tile
-  for (const sprite in getTile(allTiles[allTiles.length - 1].x, allTiles[allTiles.length - 1].y)) {
+  for (const sprite in getTile(tailTileX, tailTileY)) {
     if (sprite.type === glass) {
       if (!reverseGravity) {
-        glassSpotted(allTiles[allTiles.length - 1].x, allTiles[allTiles.length - 1].y + 1);
+        glassSpotted(tailTileX, tailTileY);
         platformY = sprite.y;
       } else {
-        glassSpotted(allTiles[allTiles.length - 1].x, allTiles[allTiles.length - 1].y + 1);
+        glassSpotted(tailTileX, tailTileY);
         platformY = sprite.y;
       }
     }
@@ -586,8 +591,8 @@ function calculatePlatform(allTiles) {
 // what to do if glass is found
 function glassSpotted(x, y) {
   const playerPosition = getFirst(player);
-  if (!((!reverseGravity && Math.abs(Math.floor(velocity)) >= atWhichGlassBreaks) ||
-        (reverseGravity && Math.ceil(velocity) <= -atWhichGlassBreaks))) {
+  if ((!reverseGravity && Math.abs(Math.floor(velocity)) < atWhichGlassBreaks) ||
+        (reverseGravity && Math.ceil(velocity) > -atWhichGlassBreaks)) {
     console.log("velocity too weak");
     return;
   }
