@@ -524,16 +524,9 @@ function getSkippedTiles(mode) {
   const skipped = [];
   const playerPosition = getFirst(player);
   // Glass version so if the player is falling and it is right on top of the glass, it'll still break if the velocity is high enough
-  if (!reverseGravity) {
-    for (let i = 1; i <= Math.abs(Math.floor(velocity)) + 1; i++) {
-      const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
-      skipped.push(getTile(playerPosition.x, scanY));
-    }
-  } else {
-    for (let i = 1; i <= Math.abs(Math.ceil(velocity)) + 1; i++) {
-      const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
-      skipped.push(getTile(playerPosition.x, scanY));
-    }
+  for (let i = 1; i <= Math.abs(Math.floor(velocity)); i++) {
+    const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
+    skipped.push(getTile(playerPosition.x, scanY));
   }
   
   /*for (let i = 1; i <= skipped.length; i += 1) {
@@ -548,84 +541,43 @@ function getSkippedTiles(mode) {
 function calculatePlatform(allTiles) {
   const playerPosition = getFirst(player);
   for (const tile of allTiles) {
-    if (tile == allTiles[allTiles.length - 1]) {
-      for (const sprite of tile) {
-        if (sprite.type === glass) {
-          glassSpotted(sprite.x, sprite.y);
-        }
-      }
-      return;
-    }
     for (const sprite of tile) {
-      // GLASS CHECKING/BREAKING CASE
-      if (glassIntact == false) {
-        if (sprite.type === glass) {
-          console.log("it's happening!");
-          addSprite(sprite.x, sprite.y, glassBroken);
-          sprite.remove();
-          framesUntilGlassDisappears = 3;
-          return;
-        }
-        continue;
-      }
+      // Intervening block cases
       if (sprite.type === spike || sprite.type === spikeFlipped) {
         death = true;
         return;
-      } else if (sprite.type === block) {
-        platformY = sprite.y;
       } else if (sprite.type === glass) {
         platformY = sprite.y;
-        glassIntact = false;
-        calculatePlatform(getSkippedTiles());
+        glassSpotted(sprite.x, sprite.y);
         return;
-        // breakGlassBottom(getTile(getFirst(player).x, sprite.y));
+      } else if (sprite.type === block) {
+        platformY = sprite.y;
+        return;
       }
       addSprite(getFirst(player).x, sprite.y - 1, red);
-      return;
     }
   }
   platformY = null;
   return;
 }
 
-// breaking glass (bottom)
-// param name is the same as the variable name that was passed in
+// what to do if glass is found
 function glassSpotted(x, y) {
   const playerPosition = getFirst(player);
-  if (!reverseGravity) {
-    // Normal Case
-    // But first, velocity "power check" to see if the player can "break" the glass
-    if (Math.abs(Math.floor(velocity)) < atWhichGlassBreaks) {
-      glassIntact = true;
+  for (sprite in getTile(x, y)) {
+    if (!((!reverseGravity && Math.abs(Math.floor(velocity)) >= atWhichGlassBreaks) ||
+          (reverseGravity && Math.ceil(velocity) <= -atWhichGlassBreaks))) {
+      console.log("weak.");
       return;
     }
-    glassIntact = false;
-    clearTile(tile.x, tile.y);
-    for (const sprite in tile) {
-      if (sprite.type === glass) {
-        console.log("it's happening!");
-        sprite.remove();
-        addSprite(playerPosition.x, playerPosition.y + 1, glassBroken);
-        framesUntilGlassDisappears = 3;
-      } 
-    }
-  } else {
-    // Reverse Gravity
-    // But first, velocity "power check" to see if the player can "break" the glass
-    if (Math.abs(Math.ceil(velocity)) < atWhichGlassBreaks) {
-      glassIntact = true;
-      return;
-    }
-    glassIntact = false;
-    for (const sprite in getTile(playerPosition.x, playerPosition.y - 1)) {
-      if (sprite.type === glass) {
-        sprite.remove();
-        addSprite(playerPosition.x, playerPosition.y - 1, glassBroken);
-        framesUntilGlassDisappears = 3;
-      } 
+    if (sprite.type === glass) {
+      console.log("it's happening!");
+      sprite.remove();
+      addSprite(getFirst(player).x, platformY, glassBroken);
+      framesUntilGlassDisappears = 3;
     }
   }
-} */ // THIS FUNCTION IS NOW OBSELETE
+}
 
 // Determine if there is a block on top of the the player
 function determineIfIsSolidNearPlayer() {
