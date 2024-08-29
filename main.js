@@ -464,7 +464,7 @@ function verticalScrolling() {
     }
 
     // Pre-fall check II (interfering platform in current map)
-    calculatePlatform(getSkippedTiles("block"));
+    calculatePlatform(getSkippedTiles());
     if (platformY !== null) {
       return;
     }
@@ -503,7 +503,7 @@ function verticalScrolling() {
         offset = ((Math.ceil(velocity) + playerPosition.y) + 1);
         targetY = floor - offset;
         // Calculate platformY (if it exists)
-        calculatePlatform(getSkippedTiles("block"));
+        calculatePlatform(getSkippedTiles());
         if (platformY !== null) {
           drawLevel("top");
           return;
@@ -523,31 +523,16 @@ function verticalScrolling() {
 function getSkippedTiles(mode) {
   const skipped = [];
   const playerPosition = getFirst(player);
-  if (mode == "glass") {
-    // Glass version so if the player is falling and it is right on top of the glass, it'll still break if the velocity is high enough
-    if (!reverseGravity) {
-      for (let i = 1; i <= Math.abs(Math.floor(velocity)) + 1; i++) {
-        const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
-        skipped.push(getTile(playerPosition.x, scanY));
-      }
-    } else {
-      for (let i = 1; i <= Math.abs(Math.ceil(velocity)) + 1; i++) {
-        const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
-        skipped.push(getTile(playerPosition.x, scanY));
-      }
+  // Glass version so if the player is falling and it is right on top of the glass, it'll still break if the velocity is high enough
+  if (!reverseGravity) {
+    for (let i = 1; i <= Math.abs(Math.floor(velocity)) + 1; i++) {
+      const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
+      skipped.push(getTile(playerPosition.x, scanY));
     }
-  } else if (mode === undefined) {
-    // Normal checking case
-    if (!reverseGravity) {
-      for (let i = 1; i <= Math.abs(Math.floor(velocity)); i++) {
-        const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
-        skipped.push(getTile(playerPosition.x, scanY));
-      }
-    } else {
-      for (let i = 1; i <= Math.abs(Math.ceil(velocity)); i++) {
-        const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
-        skipped.push(getTile(playerPosition.x, scanY));
-      }
+  } else {
+    for (let i = 1; i <= Math.abs(Math.ceil(velocity)) + 1; i++) {
+      const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
+      skipped.push(getTile(playerPosition.x, scanY));
     }
   }
   
@@ -561,11 +546,27 @@ function getSkippedTiles(mode) {
 
 // Calculate if there is a platform to land on
 function calculatePlatform(allTiles) {
+  const playerPosition = getFirst(player);
   for (const tile of allTiles) {
+    if (tile == allTiles[allTiles.length - 1]) {
+      for (const sprite of tile) {
+        if (sprite.type === glass) {
+          glassSpotted(sprite.x, sprite.y);
+        }
+      }
+      return;
+    }
     for (const sprite of tile) {
       // GLASS CHECKING/BREAKING CASE
       if (glassIntact == false) {
-        platformY = sprite.y;
+        if (sprite.type === glass) {
+          console.log("it's happening!");
+          addSprite(sprite.x, sprite.y, glassBroken);
+          sprite.remove();
+          framesUntilGlassDisappears = 3;
+          return;
+        }
+        continue;
       }
       if (sprite.type === spike || sprite.type === spikeFlipped) {
         death = true;
@@ -573,8 +574,10 @@ function calculatePlatform(allTiles) {
       } else if (sprite.type === block) {
         platformY = sprite.y;
       } else if (sprite.type === glass) {
+        platformY = sprite.y;
         glassIntact = false;
-        calculatePlatform(getSkippedTiles("glass"));
+        calculatePlatform(getSkippedTiles());
+        return;
         // breakGlassBottom(getTile(getFirst(player).x, sprite.y));
       }
       addSprite(getFirst(player).x, sprite.y - 1, red);
@@ -587,7 +590,7 @@ function calculatePlatform(allTiles) {
 
 // breaking glass (bottom)
 // param name is the same as the variable name that was passed in
-/* function breakGlassBottom(tile) {
+function glassSpotted(x, y) {
   const playerPosition = getFirst(player);
   if (!reverseGravity) {
     // Normal Case
