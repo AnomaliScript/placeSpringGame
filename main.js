@@ -546,6 +546,7 @@ function getSkippedTiles() {
 // Calculate if there is a platform to land on
 function calculatePlatform(allTiles) {
   if (allTiles.length === 0) {
+    platformY = null;
     return;
   }
   const playerPosition = getFirst(player);
@@ -571,13 +572,14 @@ function calculatePlatform(allTiles) {
     if (sprite.type === glass) {
       if (!reverseGravity) {
         glassSpotted(allTiles[allTiles.length - 1].x, allTiles[allTiles.length - 1].y + 1);
-        platformY = null;
+        platformY = sprite.y;
       } else {
         glassSpotted(allTiles[allTiles.length - 1].x, allTiles[allTiles.length - 1].y + 1);
-        platformY = null;
+        platformY = sprite.y;
       }
     }
   }
+  platformY = null;
   return;
 }
 
@@ -750,7 +752,7 @@ setInterval(() => {
       reverseGravity = false;
     }
     
-    // Sweeping up the glass
+    // "Dissipating" up the glass
     for (const sprite of getAll(glassBroken)) {
       if (sprite.type === glassBroken) {
         if (framesUntilGlassDisappears === 0) {
@@ -761,9 +763,7 @@ setInterval(() => {
       }
     }
 
-    // Resetting breaking glass case
-    glassIntact = true;
-
+    // Sweeping up the glass
     for (const sprite in getTile(playerPosition.x, playerPosition.y + 1)) {
       if (sprite.type === glass) {
         sprite.remove();
@@ -771,6 +771,9 @@ setInterval(() => {
         framesUntilGlassDisappears = 3;
       } 
     }
+
+    // Resetting breaking glass case
+    glassIntact = true;
 
     // DEBUG TEXT AND OTHER DEBUGGING THINGS
     switch (debugMode) {
