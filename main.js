@@ -520,13 +520,19 @@ function verticalScrolling() {
 }
 
 // Tile scanning function
-function getSkippedTiles(mode) {
+function getSkippedTiles() {
   const skipped = [];
   const playerPosition = getFirst(player);
-  // Glass version so if the player is falling and it is right on top of the glass, it'll still break if the velocity is high enough
-  for (let i = 1; i <= Math.abs(Math.floor(velocity)); i++) {
-    const scanY = playerPosition.y + Math.sign(velocity) * i; // Adjust based on velocity direction
-    skipped.push(getTile(playerPosition.x, scanY));
+  if (!reverseGravity) {
+    for (let i = 1; i <= Math.abs(Math.floor(velocity)); i++) { // uses floor
+      const scanY = playerPosition.y + Math.sign(velocity) * i;
+      skipped.push(getTile(playerPosition.x, scanY));
+    }
+  } else {
+    for (let i = 1; i <= Math.abs(Math.ceil(velocity)); i++) { // uses ceiling
+      const scanY = playerPosition.y + Math.sign(velocity) * i;
+      skipped.push(getTile(playerPosition.x, scanY));
+    }
   }
   
   /*for (let i = 1; i <= skipped.length; i += 1) {
@@ -539,6 +545,9 @@ function getSkippedTiles(mode) {
 
 // Calculate if there is a platform to land on
 function calculatePlatform(allTiles) {
+  if (allTiles.length === 0) {
+    return;
+  }
   const playerPosition = getFirst(player);
   for (const tile of allTiles) {
     for (const sprite of tile) {
@@ -557,21 +566,32 @@ function calculatePlatform(allTiles) {
       addSprite(getFirst(player).x, sprite.y - 1, red);
     }
   }
-  platformY = null;
+  // 1 extra tile
+  for (const sprite in getTile(allTiles[allTiles.length - 1].x, allTiles[allTiles.length - 1].y)) {
+    if (sprite.type === glass) {
+      if (!reverseGravity) {
+        glassSpotted(allTiles[allTiles.length - 1].x, allTiles[allTiles.length - 1].y + 1);
+        platformY = null;
+      } else {
+        glassSpotted(allTiles[allTiles.length - 1].x, allTiles[allTiles.length - 1].y + 1);
+        platformY = null;
+      }
+    }
+  }
   return;
 }
 
 // what to do if glass is found
 function glassSpotted(x, y) {
   const playerPosition = getFirst(player);
+  if (!((!reverseGravity && Math.abs(Math.floor(velocity)) >= atWhichGlassBreaks) ||
+        (reverseGravity && Math.ceil(velocity) <= -atWhichGlassBreaks))) {
+    console.log("velocity too weak");
+    return;
+  }
   for (sprite in getTile(x, y)) {
-    if (!((!reverseGravity && Math.abs(Math.floor(velocity)) >= atWhichGlassBreaks) ||
-          (reverseGravity && Math.ceil(velocity) <= -atWhichGlassBreaks))) {
-      console.log("weak.");
-      return;
-    }
     if (sprite.type === glass) {
-      console.log("it's happening!");
+      console.log("glass is breaking");
       sprite.remove();
       addSprite(getFirst(player).x, platformY, glassBroken);
       framesUntilGlassDisappears = 3;
