@@ -50,6 +50,10 @@ let frameRate = 60;
 let reverseGravity = false;
 let readyToRise = false;
 
+// Interaction Variables
+let wPressed = false;
+let sPressed = true;
+
 // Abilities!
 let doubleJump = false;
 let gravityAbility = false;
@@ -539,6 +543,10 @@ function verticalScrolling() {
 
 // Tile scanning function
 function getSkippedTiles() {
+  if ((!reverseGravity && velocity < 0) || (reverseGravity && velocity > 0)) {
+    // console.log("skipping finding skipped tiles!");
+    return "jumping";
+  }
   const skipped = [];
   const playerPosition = getFirst(player);
   if (!reverseGravity) {
@@ -588,7 +596,7 @@ function getSkippedTiles() {
 
 // Calculate if there is a platform to land on
 function calculatePlatform(allTiles) {
-  if (allTiles.length === 0) {
+  if (allTiles.length === 0 || allTiles === "jumping") {
     platformY = null;
     return;
   }
@@ -616,12 +624,14 @@ function calculatePlatform(allTiles) {
   let tailTileX = playerPosition.x;
   let tailTileY;
   if (!reverseGravity) {
-    tailTileY = Math.abs(Math.floor(velocity)) + 1;
+    tailTileY = playerPosition.y + Math.abs(Math.floor(velocity)) + 1;
   } else {
-    tailTileY = Math.ceil(velocity) - 1;
+    tailTileY = playerPosition.y + Math.ceil(velocity) - 1;
   }
+  try {
+    addSprite(tailTileX, tailTileY, violet);
+  } catch(error) {};
   
-  // addSprite(tailTileX, tailTileY, red);
   // 1 extra tile
   for (const sprite in getTile(tailTileX, tailTileY)) {
     if (sprite.type === glass) {
@@ -643,11 +653,15 @@ function glassSpotted(x, y) {
   if ((!reverseGravity && Math.abs(Math.floor(velocity)) < atWhichGlassBreaks) ||
         (reverseGravity && Math.ceil(velocity) > -atWhichGlassBreaks)) {
     console.log("velocity too weak");
+    if (!reverseGravity) {
+      console.log(`${Math.abs(Math.floor(velocity))} is too much negativeness to ${atWhichGlassBreaks}`);
+    } else {
+      console.log(`${Math.ceil(velocity)} is too much positiveness compared to ${atWhichGlassBreaks}`);
+    }
     return;
   }
   console.log("strong enough velocity");
-  for (sprite in getTile(x, y)) {
-    console.log(`${sprite.type}`);
+  for (const sprite of getTile(x, y)) {
     if (sprite.type === glass) {
       console.log("glass is breaking");
       sprite.remove();
@@ -899,8 +913,8 @@ const levels = [{
 .................
 .................
 ..bbb............
-.................
-bb...gg..........
+.....g...........
+bb....g..........
 .......g.........
 ........g........
 .........g.......
@@ -1172,6 +1186,7 @@ onInput("w", () => {
     }
     jpb();
   }
+  wPressed = true;
 });
 
 onInput("a", () => {
@@ -1196,6 +1211,7 @@ onInput("s", () => {
     }
   }
   jpb();
+  sPressed = true;
 });
 
 onInput("d", () => {
