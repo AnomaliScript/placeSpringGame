@@ -22,6 +22,7 @@ let currentLevel = 0;
 
 // Debugging Sprites
 const red = "e";
+const violet = "v";
 const target = "t";
 const leftArrow = "q";
 const rightArrow = "x";
@@ -43,7 +44,7 @@ let stopIt = false; // stopIt IS ONLY USEFUL IF THERE ARE NO MOVING OBJECTS UNDE
 let offset;
 let atWhichGlassBreaks = 2;
 let glassIntact = true;
-let frameRate = 500;
+let frameRate = 60;
 
 // Upside-Down Physics
 let reverseGravity = false;
@@ -216,6 +217,23 @@ LLLLLLLLLLLLLLLL
 3333333333333333
 3333333333333333
 3333333333333333`],
+  [violet, bitmap`
+HHHHHHHHHHHHHHHH
+HHHHHHHHHHHHHHHH
+HHHHHHHHHHHHHHHH
+HHHHHHHHHHHHHHHH
+HHHHHHHHHHHHHHHH
+HHHHHHHHHHHHHHHH
+HHHHHHHHHHHHHHHH
+HHHHHHHHHHHHHHHH
+HHHHHHHHHHHHHHHH
+HHHHHHHHHHHHHHHH
+HHHHHHHHHHHHHHHH
+HHHHHHHHHHHHHHHH
+HHHHHHHHHHHHHHHH
+HHHHHHHHHHHHHHHH
+HHHHHHHHHHHHHHHH
+HHHHHHHHHHHHHHHH`],
   [target, bitmap`
 C..............C
 .C............C.
@@ -534,11 +552,34 @@ function getSkippedTiles() {
       skipped.push(getTile(playerPosition.x, scanY));
     }
   }
+
+  // Debug tool where the skipped tiles are highlighted (in red)
+  if (!reverseGravity) {
+    for (let i = 1; i <= skipped.length; i += 1) {
+      try {
+        addSprite(playerPosition.x, playerPosition.y + i, red);
+      } catch (error) {}
+    }
+  } else {
+    for (let i = 1; i <= skipped.length; i += 1) {
+      try {
+        addSprite(playerPosition.x, playerPosition.y - i + 1, red);
+      } catch (error) {}
+    }
+  }
   
-  for (let i = 1; i <= skipped.length; i += 1) {
-    try {
-      addSprite(playerPosition.x, playerPosition.y + i, red);
-    } catch (error) {}
+  if (!reverseGravity) {
+    for (let i = 1; i <= Math.abs(Math.floor(velocity + GRAVITY)); i += 1) {
+      try {
+        addSprite(playerPosition.x, playerPosition.y + i + 1, violet);
+      } catch (error) {}
+    }
+  } else {
+    for (let i = 1; i <= Math.abs(Math.ceil(velocity - GRAVITY)); i += 1) {
+      try {
+        addSprite(playerPosition.x, playerPosition.y - i + 1, violet);
+      } catch (error) {}
+    }
   }
   return skipped;
 }
@@ -676,6 +717,7 @@ setInterval(() => {
   if (game.isRunning()) {
     // Clearing debugging tiles
     for (const tile of tilesWith(red)) {for (const sprite of tile) {if (sprite.type === red) {sprite.remove();}}}
+    for (const tile of tilesWith(violet)) {for (const sprite of tile) {if (sprite.type === violet) {sprite.remove();}}}
     for (const tile of tilesWith(target)) {for (const sprite of tile) {if (sprite.type === target) {sprite.remove();}}}
     
     // Floor height (length) update
