@@ -43,7 +43,7 @@ let stopIt = false; // stopIt IS ONLY USEFUL IF THERE ARE NO MOVING OBJECTS UNDE
 let offset;
 let atWhichGlassBreaks = 2;
 let glassIntact = true;
-let frameRate = 60;
+let frameRate = 500;
 
 // Upside-Down Physics
 let reverseGravity = false;
@@ -530,16 +530,16 @@ function getSkippedTiles() {
     }
   } else {
     for (let i = 1; i <= Math.abs(Math.ceil(velocity)); i++) { // uses ceiling
-      const scanY = playerPosition.y + Math.sign(velocity) * i;
+      const scanY = playerPosition.y - Math.sign(velocity) * i;
       skipped.push(getTile(playerPosition.x, scanY));
     }
   }
   
-  /*for (let i = 1; i <= skipped.length; i += 1) {
+  for (let i = 1; i <= skipped.length; i += 1) {
     try {
       addSprite(playerPosition.x, playerPosition.y + i, red);
     } catch (error) {}
-  } */ //Broken debug tool :(
+  }
   return skipped;
 }
 
@@ -570,7 +570,13 @@ function calculatePlatform(allTiles) {
     }
   }
   let tailTileX = allTiles[allTiles.length - 1].x;
-  let tailTileY = allTiles[allTiles.length - 1].y + 1;
+  let tailTileY;
+  if (!reverseGravity) {
+    tailTileY = allTiles[allTiles.length - 1].y + 1;
+  } else {
+    tailTileY = allTiles[allTiles.length - 1].y - 1;
+  }
+  
   // addSprite(tailTileX, tailTileY, red);
   // 1 extra tile
   for (const sprite in getTile(tailTileX, tailTileY)) {
@@ -590,17 +596,19 @@ function calculatePlatform(allTiles) {
 
 // what to do if glass is found
 function glassSpotted(x, y) {
+  console.log("registered");
   const playerPosition = getFirst(player);
   if ((!reverseGravity && Math.abs(Math.floor(velocity)) < atWhichGlassBreaks) ||
         (reverseGravity && Math.ceil(velocity) > -atWhichGlassBreaks)) {
     console.log("velocity too weak");
     return;
   }
+  console.log("strong enough velocity");
   for (sprite in getTile(x, y)) {
     if (sprite.type === glass) {
       console.log("glass is breaking");
       sprite.remove();
-      addSprite(getFirst(player).x, platformY, glassBroken);
+      addSprite(x, y, glassBroken);
       framesUntilGlassDisappears = 3;
     }
   }
