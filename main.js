@@ -554,6 +554,7 @@ function getSkippedTiles() {
   }
 
   // Debug tool where the skipped tiles are highlighted (in red)
+  // Present (or Past when you see it)
   if (!reverseGravity) {
     for (let i = 1; i <= skipped.length; i += 1) {
       try {
@@ -568,6 +569,7 @@ function getSkippedTiles() {
     }
   }
   
+  // Future (useful when determining if glass breaks or not, and for other debugging processes)
   if (!reverseGravity) {
     for (let i = 1; i <= Math.abs(Math.floor(velocity + GRAVITY)); i += 1) {
       try {
@@ -610,12 +612,13 @@ function calculatePlatform(allTiles) {
       }
     }
   }
-  let tailTileX = allTiles[allTiles.length - 1].x;
+  // tailTile initialization
+  let tailTileX = playerPosition.x;
   let tailTileY;
   if (!reverseGravity) {
-    tailTileY = allTiles[allTiles.length - 1].y + 1;
+    tailTileY = Math.abs(Math.floor(velocity)) + 1;
   } else {
-    tailTileY = allTiles[allTiles.length - 1].y - 1;
+    tailTileY = Math.ceil(velocity) - 1;
   }
   
   // addSprite(tailTileX, tailTileY, red);
