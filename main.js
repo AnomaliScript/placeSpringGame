@@ -31,7 +31,7 @@ const spm /* "spawn point marker" */ = "m";
 
 // Physics Variables
 let floor = 10;
-let velocity = 0;
+let velocity = 0.0;
 let airborne = false;
 let left = false;
 let right = false;
@@ -43,13 +43,13 @@ let readyToFall = false;
 let justEntered = false;
 let stopIt = false; // stopIt IS ONLY USEFUL IF THERE ARE NO MOVING OBJECTS UNDERNEATH (the current level)
 let offset;
-let glassFragilityHeight = 4;
-let atWhichGlassBreaks = 0.5 * glassFragilityHeight;
+let glassFragilityHeight = 5;
+let atWhichGlassBreaks;
 let tailTileX;
 let tailTileY;
 let glassIntact = true;
 let glassBelow = false;
-let frameRate = 500;
+let frameRate = 60;
 
 // Upside-Down Physics
 let reverseGravity = false;
@@ -688,17 +688,25 @@ function glassSpotted(x, y, prospective) {
     }
   }
   const playerPosition = getFirst(player);
-  if ((!reverseGravity && Math.abs(adjustedVelocity) < atWhichGlassBreaks) ||
+  if ((!reverseGravity && adjustedVelocity < atWhichGlassBreaks) ||
         (reverseGravity && adjustedVelocity > -atWhichGlassBreaks)) {
     console.log("adjustedVelocity too weak");
+
+    // Rejection note
     if (!reverseGravity) {
-      console.log(`${Math.abs(Math.floor(adjustedVelocity))} is too much negativeness to ${atWhichGlassBreaks}`);
+      console.log(`${adjustedVelocity} is too much negativeness to ${atWhichGlassBreaks}`);
     } else {
-      console.log(`${Math.ceil(adjustedVelocity)} is too much positiveness compared to ${atWhichGlassBreaks}`);
+      console.log(`${adjustedVelocity} is too much positiveness to ${atWhichGlassBreaks}`);
     }
     return;
   }
-  console.log("strong enough velocity");
+  
+  // Acceptance note
+  if (!reverseGravity) {
+    console.log(`strong enough velocity, ${adjustedVelocity} >= ${atWhichGlassBreaks}`);
+  } else {
+    console.log(`strong enough velocity, ${adjustedVelocity} <= ${atWhichGlassBreaks}`);
+  }
   for (const sprite of getTile(x, y)) {
     if (sprite.type === glass) {
       console.log("glass is breaking");
@@ -776,7 +784,7 @@ setInterval(() => {
     for (const tile of tilesWith(target)) {for (const sprite of tile) {if (sprite.type === target) {sprite.remove();}}}
 
     // Refreshing glass fragility
-    atWhichGlassBreaks = 0.5 * glassFragilityHeight;
+    atWhichGlassBreaks = (0.5 * glassFragilityHeight) - 0.5;
     // Floor height (length) update
     resetFloor();
     // troubleshooting addText stuff
