@@ -43,13 +43,9 @@ let readyToFall = false;
 let justEntered = false;
 let stopIt = false; // stopIt IS ONLY USEFUL IF THERE ARE NO MOVING OBJECTS UNDERNEATH (the current level)
 let offset;
-let glassFragilityHeight = 4;
-let atWhichGlassBreaks = 0.5 * glassFragilityHeight;
-let tailTileX;
-let tailTileY;
+let atWhichGlassBreaks = 2;
 let glassIntact = true;
-let glassBelow = false;
-let frameRate = 500;
+let frameRate = 60;
 
 // Upside-Down Physics
 let reverseGravity = false;
@@ -438,7 +434,7 @@ function verticalScrolling() {
         offset = 0;
       }
       drawLevel("bottom");
-a
+
       // During-fall check (interfering platform on the other side)
       const skipping = [];
       for (let i = 0; i <= offset; i++) {
@@ -643,58 +639,46 @@ function calculatePlatform(allTiles) {
     }
   }
   // tailTile initialization
-  tailTileX = playerPosition.x;
+  let tailTileX = playerPosition.x;
+  let tailTileY;
   if (!reverseGravity) {
     //             inital pos      fast-forwarding to next move (green)   accounting for intial move (scarlet)    gets past the player
     tailTileY = playerPosition.y + Math.abs(Math.floor(velocity + GRAVITY)) + Math.abs(Math.floor(velocity)) + 1;
   } else {
     tailTileY = playerPosition.y - Math.abs(Math.ceil(velocity - GRAVITY)) - Math.abs(Math.ceil(velocity)) - 1;
   }
-  // Future (it's really just an extension for the Near Future/Present, just looking one block ahead tfor the breaking glass case)
+  // Future (it's really just an extension fo the Near Future/Present, just looking one block ahead tfor the breaking glass case)
   try {
     addSprite(tailTileX, tailTileY, violet);
   } catch(error) {};
-  console.log(`${tailTileX}, ${tailTileY}`);
-  for (const sprite in getTile(tailTileX, tailTileY)) {
-    console.log(`${sprite}`);
-  }
   
   // 1 extra tile
-  // method #1
-  for (const sprite of getAll(glass)) {
-    if (sprite.x == tailTileX && sprite.y == tailTileY) {
+  for (const sprite in getTile(tailTileX, tailTileY)) {
+    if (sprite.type === glass) {
       console.log("end glass spotted!");
-      glassBelow = true;
+      if (!reverseGravity) {
+        targetY = sprite.y - 1;
+        glassSpotted(tailTileX, tailTileY);
+      } else {
+        targetY = sprite.y + 1;
+        glassSpotted(tailTileX, tailTileY);
+      }
     }
   }
-  // method #2
-  /* for (const sprite in getTile(tailTileX, tailTileY)) {
-    if (sprite.type === glass) {
-      
-    }
-  } */
   platformY = null;
   return;
 }
 
 // what to do if glass is found
-function glassSpotted(x, y, prospective) {
-  adjustedVelocity = velocity;
-  if (prospective === true) {
-    if (!reverseGravity) {
-      adjustedVelocity += 0.25;
-    } else {
-      adjustedVelocity -= 0.25;
-    }
-  }
+function glassSpotted(x, y) {
   const playerPosition = getFirst(player);
-  if ((!reverseGravity && Math.abs(adjustedVelocity) < atWhichGlassBreaks) ||
-        (reverseGravity && adjustedVelocity > -atWhichGlassBreaks)) {
-    console.log("adjustedVelocity too weak");
+  if ((!reverseGravity && Math.abs(Math.floor(velocity)) < atWhichGlassBreaks) ||
+        (reverseGravity && Math.ceil(velocity) > -atWhichGlassBreaks)) {
+    console.log("velocity too weak");
     if (!reverseGravity) {
-      console.log(`${Math.abs(Math.floor(adjustedVelocity))} is too much negativeness to ${atWhichGlassBreaks}`);
+      console.log(`${Math.abs(Math.floor(velocity))} is too much negativeness to ${atWhichGlassBreaks}`);
     } else {
-      console.log(`${Math.ceil(adjustedVelocity)} is too much positiveness compared to ${atWhichGlassBreaks}`);
+      console.log(`${Math.ceil(velocity)} is too much positiveness compared to ${atWhichGlassBreaks}`);
     }
     return;
   }
@@ -774,9 +758,7 @@ setInterval(() => {
     for (const tile of tilesWith(violet)) {for (const sprite of tile) {if (sprite.type === violet) {sprite.remove();}}}
     for (const tile of tilesWith(green)) {for (const sprite of tile) {if (sprite.type === green) {sprite.remove();}}}
     for (const tile of tilesWith(target)) {for (const sprite of tile) {if (sprite.type === target) {sprite.remove();}}}
-
-    // Refreshing glass fragility
-    atWhichGlassBreaks = 0.5 * glassFragilityHeight;
+    
     // Floor height (length) update
     resetFloor();
     // troubleshooting addText stuff
@@ -862,12 +844,6 @@ setInterval(() => {
       getFirst(player).remove();
       addSprite(levels[currentLevel].spawnPos.x, levels[currentLevel].spawnPos.y, player);
       reverseGravity = false;
-    }
-
-    // Glass check (seems late, but it works)
-    if (glassBelow) {
-      glassSpotted(tailTileX, tailTileY, true);
-      glassBelow = false;
     }
     
     // "Dissipating" up the glass
