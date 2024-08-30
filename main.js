@@ -564,7 +564,7 @@ function getSkippedTiles() {
   } else {
     for (let i = 1; i <= skipped.length; i += 1) {
       try {
-        addSprite(playerPosition.x, playerPosition.y - i + 1, red);
+        addSprite(playerPosition.x, playerPosition.y - i, red);
       } catch (error) {}
     }
   }
@@ -579,7 +579,7 @@ function getSkippedTiles() {
   } else {
     for (let i = 1; i <= Math.abs(Math.ceil(velocity - GRAVITY)); i += 1) {
       try {
-        addSprite(playerPosition.x, playerPosition.y - i + 1, violet);
+        addSprite(playerPosition.x, playerPosition.y - i - 1, violet);
       } catch (error) {}
     }
   }
@@ -625,12 +625,11 @@ function calculatePlatform(allTiles) {
   // 1 extra tile
   for (const sprite in getTile(tailTileX, tailTileY)) {
     if (sprite.type === glass) {
+      velocity = 0;
       if (!reverseGravity) {
         glassSpotted(tailTileX, tailTileY);
-        platformY = sprite.y;
       } else {
         glassSpotted(tailTileX, tailTileY);
-        platformY = sprite.y;
       }
     }
   }
@@ -640,7 +639,6 @@ function calculatePlatform(allTiles) {
 
 // what to do if glass is found
 function glassSpotted(x, y) {
-  console.log("registered");
   const playerPosition = getFirst(player);
   if ((!reverseGravity && Math.abs(Math.floor(velocity)) < atWhichGlassBreaks) ||
         (reverseGravity && Math.ceil(velocity) > -atWhichGlassBreaks)) {
@@ -649,6 +647,7 @@ function glassSpotted(x, y) {
   }
   console.log("strong enough velocity");
   for (sprite in getTile(x, y)) {
+    console.log(`${sprite.type}`);
     if (sprite.type === glass) {
       console.log("glass is breaking");
       sprite.remove();
