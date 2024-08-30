@@ -45,7 +45,7 @@ let stopIt = false; // stopIt IS ONLY USEFUL IF THERE ARE NO MOVING OBJECTS UNDE
 let offset;
 let atWhichGlassBreaks = 2;
 let glassIntact = true;
-let frameRate = 500;
+let frameRate = 60;
 
 // Upside-Down Physics
 let reverseGravity = false;
@@ -574,7 +574,7 @@ function getSkippedTiles() {
     }
   } else {
     for (let i = 1; i <= Math.abs(Math.ceil(velocity)); i++) { // uses ceiling
-      const scanY = playerPosition.y - Math.sign(velocity) * i;
+      const scanY = playerPosition.y + Math.sign(velocity) * i;
       skipped.push(getTile(playerPosition.x, scanY));
     }
   }
@@ -645,7 +645,7 @@ function calculatePlatform(allTiles) {
     //             inital pos      fast-forwarding to next move (green)   accounting for intial move (scarlet)    gets past the player
     tailTileY = playerPosition.y + Math.abs(Math.floor(velocity + GRAVITY)) + Math.abs(Math.floor(velocity)) + 1;
   } else {
-    tailTileY = playerPosition.y + Math.abs(Math.ceil(velocity - GRAVITY)) - Math.abs(Math.ceil(velocity)) - 1;
+    tailTileY = playerPosition.y - Math.abs(Math.ceil(velocity - GRAVITY)) - Math.abs(Math.ceil(velocity)) - 1;
   }
   // Future (it's really just an extension fo the Near Future/Present, just looking one block ahead tfor the breaking glass case)
   try {
@@ -655,10 +655,12 @@ function calculatePlatform(allTiles) {
   // 1 extra tile
   for (const sprite in getTile(tailTileX, tailTileY)) {
     if (sprite.type === glass) {
-      velocity = 0;
+      console.log("end glass spotted!");
       if (!reverseGravity) {
+        targetY = sprite.y - 1;
         glassSpotted(tailTileX, tailTileY);
       } else {
+        targetY = sprite.y + 1;
         glassSpotted(tailTileX, tailTileY);
       }
     }
