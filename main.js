@@ -21,8 +21,9 @@ const door = "d";
 let currentLevel = 0;
 
 // Debugging Sprites
-const red = "e";
+const scarlet = "e";
 const violet = "v";
+const green = "n";
 const target = "t";
 const leftArrow = "q";
 const rightArrow = "x";
@@ -44,7 +45,7 @@ let stopIt = false; // stopIt IS ONLY USEFUL IF THERE ARE NO MOVING OBJECTS UNDE
 let offset;
 let atWhichGlassBreaks = 2;
 let glassIntact = true;
-let frameRate = 60;
+let frameRate = 500;
 
 // Upside-Down Physics
 let reverseGravity = false;
@@ -204,7 +205,7 @@ LLLLLLLLLLLLLLLL
 ....CCCCCCCCCCC.
 ....CCCCCCCCCCC.
 ....CCCCCCCCCCC.`],
-  [red, bitmap`
+  [scarlet, bitmap`
 3333333333333333
 3333333333333333
 3333333333333333
@@ -238,6 +239,23 @@ HHHHHHHHHHHHHHHH
 HHHHHHHHHHHHHHHH
 HHHHHHHHHHHHHHHH
 HHHHHHHHHHHHHHHH`],
+  [green, bitmap`
+DDDDDDDDDDDDDDDD
+DDDDDDDDDDDDDDDD
+DDDDDDDDDDDDDDDD
+DDDDDDDDDDDDDDDD
+DDDDDDDDDDDDDDDD
+DDDDDDDDDDDDDDDD
+DDDDDDDDDDDDDDDD
+DDDDDDDDDDDDDDDD
+DDDDDDDDDDDDDDDD
+DDDDDDDDDDDDDDDD
+DDDDDDDDDDDDDDDD
+DDDDDDDDDDDDDDDD
+DDDDDDDDDDDDDDDD
+DDDDDDDDDDDDDDDD
+DDDDDDDDDDDDDDDD
+DDDDDDDDDDDDDDDD`],
   [target, bitmap`
 C..............C
 .C............C.
@@ -561,33 +579,33 @@ function getSkippedTiles() {
     }
   }
 
-  // Debug tool where the skipped tiles are highlighted (in red)
-  // Present (or Past when you see it)
+  // Debug tool where the skipped tiles are highlighted (in scarlet)
+  // Past scanned
   if (!reverseGravity) {
     for (let i = 1; i <= skipped.length; i += 1) {
       try {
-        addSprite(playerPosition.x, playerPosition.y + i, red);
+        addSprite(playerPosition.x, playerPosition.y + i, scarlet);
       } catch (error) {}
     }
   } else {
     for (let i = 1; i <= skipped.length; i += 1) {
       try {
-        addSprite(playerPosition.x, playerPosition.y - i, red);
+        addSprite(playerPosition.x, playerPosition.y - i, scarlet);
       } catch (error) {}
     }
   }
   
-  // Future (useful when determining if glass breaks or not, and for other debugging processes)
+  // Near Future/Present scanned (useful when determining if glass breaks or not, and for other debugging processes)
   if (!reverseGravity) {
-    for (let i = 1; i <= Math.abs(Math.floor(velocity + GRAVITY)); i += 1) {
+    for (let i = 1; i <= Math.abs(Math.floor(velocity + GRAVITY)); i++) { // uses floor
       try {
-        addSprite(playerPosition.x, playerPosition.y + i + 1, violet);
+        addSprite(playerPosition.x, playerPosition.y + i + skipped.length, green);
       } catch (error) {}
     }
   } else {
-    for (let i = 1; i <= Math.abs(Math.ceil(velocity - GRAVITY)); i += 1) {
+    for (let i = 1; i <= Math.abs(Math.ceil(velocity - GRAVITY)); i++) { // uses ceiling
       try {
-        addSprite(playerPosition.x, playerPosition.y - i - 1, violet);
+        addSprite(playerPosition.x, playerPosition.y - i - skipped.length, green);
       } catch (error) {}
     }
   }
@@ -624,10 +642,12 @@ function calculatePlatform(allTiles) {
   let tailTileX = playerPosition.x;
   let tailTileY;
   if (!reverseGravity) {
-    tailTileY = playerPosition.y + Math.abs(Math.floor(velocity)) + 1;
+    //             inital pos      fast-forwarding to next move (green)   accounting for intial move (scarlet)    gets past the player
+    tailTileY = playerPosition.y + Math.abs(Math.floor(velocity + GRAVITY)) + Math.abs(Math.floor(velocity)) + 1;
   } else {
-    tailTileY = playerPosition.y + Math.ceil(velocity) - 1;
+    tailTileY = playerPosition.y + Math.abs(Math.ceil(velocity - GRAVITY)) - Math.abs(Math.ceil(velocity)) - 1;
   }
+  // Future (it's really just an extension fo the Near Future/Present, just looking one block ahead tfor the breaking glass case)
   try {
     addSprite(tailTileX, tailTileY, violet);
   } catch(error) {};
@@ -732,8 +752,9 @@ let game = {
 setInterval(() => {
   if (game.isRunning()) {
     // Clearing debugging tiles
-    for (const tile of tilesWith(red)) {for (const sprite of tile) {if (sprite.type === red) {sprite.remove();}}}
+    for (const tile of tilesWith(scarlet)) {for (const sprite of tile) {if (sprite.type === scarlet) {sprite.remove();}}}
     for (const tile of tilesWith(violet)) {for (const sprite of tile) {if (sprite.type === violet) {sprite.remove();}}}
+    for (const tile of tilesWith(green)) {for (const sprite of tile) {if (sprite.type === green) {sprite.remove();}}}
     for (const tile of tilesWith(target)) {for (const sprite of tile) {if (sprite.type === target) {sprite.remove();}}}
     
     // Floor height (length) update
@@ -910,8 +931,8 @@ const levels = [{
 .......bb........
 .................
 .................
-.................
-.................
+..b..............
+..bb.............
 ..bbb............
 .....g...........
 bb....g..........
@@ -1190,6 +1211,7 @@ onInput("w", () => {
 });
 
 onInput("a", () => {
+  calculatePlatform(getSkippedTiles());
   if (getFirst(player).x == 0) {
     if (levels[currentLevel].left !== null) {
       drawLevel("left");
@@ -1215,6 +1237,7 @@ onInput("s", () => {
 });
 
 onInput("d", () => {
+  calculatePlatform(getSkippedTiles());
   if (getFirst(player).x == width() - 1) {
     if (levels[currentLevel].right !== null) {
       drawLevel("right");
@@ -1286,7 +1309,7 @@ afterInput(() => {
 
   // Surveillence death check (movement = death, but not if you're falling; act "dead")
   /*
-  let reds = getAll(red);
+  let reds = getAll(scarlet);
   for (let i = 0; i < reds.length; i++) {
     if (playerPosition.x == reds[i].x && playerPosition.y == reds[i].y) {
       getFirst(player).x = levels[currentLevel].spawnPos.x;
