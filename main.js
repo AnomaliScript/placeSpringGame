@@ -45,7 +45,8 @@ let stopIt = false; // stopIt IS ONLY USEFUL IF THERE ARE NO MOVING OBJECTS UNDE
 let offset;
 let atWhichGlassBreaks = 2;
 let glassIntact = true;
-let frameRate = 60;
+let glassBelow = false;
+let frameRate = 500;
 
 // Upside-Down Physics
 let reverseGravity = false;
@@ -434,7 +435,7 @@ function verticalScrolling() {
         offset = 0;
       }
       drawLevel("bottom");
-
+a
       // During-fall check (interfering platform on the other side)
       const skipping = [];
       for (let i = 0; i <= offset; i++) {
@@ -647,24 +648,33 @@ function calculatePlatform(allTiles) {
   } else {
     tailTileY = playerPosition.y - Math.abs(Math.ceil(velocity - GRAVITY)) - Math.abs(Math.ceil(velocity)) - 1;
   }
-  // Future (it's really just an extension fo the Near Future/Present, just looking one block ahead tfor the breaking glass case)
+  // Future (it's really just an extension for the Near Future/Present, just looking one block ahead tfor the breaking glass case)
   try {
     addSprite(tailTileX, tailTileY, violet);
   } catch(error) {};
+  console.log(`${tailTileX}, ${tailTileY}`);
+  for (const sprite in getTile(tailTileX, tailTileY)) {
+    console.log(`${sprite}`);
+  }
+
+  if (glassBelow) {
+    
+  }
   
   // 1 extra tile
-  for (const sprite in getTile(tailTileX, tailTileY)) {
-    if (sprite.type === glass) {
+  // method #1
+  for (const sprite of getAll(glass)) {
+    if (sprite.x == tailTileX && sprite.y == tailTileY) {
       console.log("end glass spotted!");
-      if (!reverseGravity) {
-        targetY = sprite.y - 1;
-        glassSpotted(tailTileX, tailTileY);
-      } else {
-        targetY = sprite.y + 1;
-        glassSpotted(tailTileX, tailTileY);
-      }
+      glassBelow = true;
     }
   }
+  // method #2
+  /* for (const sprite in getTile(tailTileX, tailTileY)) {
+    if (sprite.type === glass) {
+      
+    }
+  } */
   platformY = null;
   return;
 }
