@@ -43,7 +43,10 @@ let readyToFall = false;
 let justEntered = false;
 let stopIt = false; // stopIt IS ONLY USEFUL IF THERE ARE NO MOVING OBJECTS UNDERNEATH (the current level)
 let offset;
-let atWhichGlassBreaks = 2;
+let glassFragilityHeight = 4;
+let atWhichGlassBreaks = 0.5 * glassFragilityHeight;
+let tailTileX;
+let tailTileY;
 let glassIntact = true;
 let glassBelow = false;
 let frameRate = 500;
@@ -640,8 +643,7 @@ function calculatePlatform(allTiles) {
     }
   }
   // tailTile initialization
-  let tailTileX = playerPosition.x;
-  let tailTileY;
+  tailTileX = playerPosition.x;
   if (!reverseGravity) {
     //             inital pos      fast-forwarding to next move (green)   accounting for intial move (scarlet)    gets past the player
     tailTileY = playerPosition.y + Math.abs(Math.floor(velocity + GRAVITY)) + Math.abs(Math.floor(velocity)) + 1;
@@ -655,10 +657,6 @@ function calculatePlatform(allTiles) {
   console.log(`${tailTileX}, ${tailTileY}`);
   for (const sprite in getTile(tailTileX, tailTileY)) {
     console.log(`${sprite}`);
-  }
-
-  if (glassBelow) {
-    
   }
   
   // 1 extra tile
@@ -680,15 +678,23 @@ function calculatePlatform(allTiles) {
 }
 
 // what to do if glass is found
-function glassSpotted(x, y) {
-  const playerPosition = getFirst(player);
-  if ((!reverseGravity && Math.abs(Math.floor(velocity)) < atWhichGlassBreaks) ||
-        (reverseGravity && Math.ceil(velocity) > -atWhichGlassBreaks)) {
-    console.log("velocity too weak");
+function glassSpotted(x, y, prospective) {
+  adjustedVelocity = velocity;
+  if (prospective === true) {
     if (!reverseGravity) {
-      console.log(`${Math.abs(Math.floor(velocity))} is too much negativeness to ${atWhichGlassBreaks}`);
+      adjustedVelocity += 0.25;
     } else {
-      console.log(`${Math.ceil(velocity)} is too much positiveness compared to ${atWhichGlassBreaks}`);
+      adjustedVelocity -= 0.25;
+    }
+  }
+  const playerPosition = getFirst(player);
+  if ((!reverseGravity && Math.abs(adjustedVelocity) < atWhichGlassBreaks) ||
+        (reverseGravity && adjustedVelocity > -atWhichGlassBreaks)) {
+    console.log("adjustedVelocity too weak");
+    if (!reverseGravity) {
+      console.log(`${Math.abs(Math.floor(adjustedVelocity))} is too much negativeness to ${atWhichGlassBreaks}`);
+    } else {
+      console.log(`${Math.ceil(adjustedVelocity)} is too much positiveness compared to ${atWhichGlassBreaks}`);
     }
     return;
   }
@@ -768,7 +774,9 @@ setInterval(() => {
     for (const tile of tilesWith(violet)) {for (const sprite of tile) {if (sprite.type === violet) {sprite.remove();}}}
     for (const tile of tilesWith(green)) {for (const sprite of tile) {if (sprite.type === green) {sprite.remove();}}}
     for (const tile of tilesWith(target)) {for (const sprite of tile) {if (sprite.type === target) {sprite.remove();}}}
-    
+
+    // Refreshing glass fragility
+    atWhichGlassBreaks = 0.5 * glassFragilityHeight;
     // Floor height (length) update
     resetFloor();
     // troubleshooting addText stuff
@@ -854,6 +862,12 @@ setInterval(() => {
       getFirst(player).remove();
       addSprite(levels[currentLevel].spawnPos.x, levels[currentLevel].spawnPos.y, player);
       reverseGravity = false;
+    }
+
+    // Glass check (seems late, but it works)
+    if (glassBelow) {
+      glassSpotted(tailTileX, tailTileY, true);
+      glassBelow = false;
     }
     
     // "Dissipating" up the glass
