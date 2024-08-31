@@ -1359,7 +1359,7 @@ onInput("j", () => {
 
 // Travelling (through doors) key
 onInput("k", () => {
-  travel(x, y);
+  travel();
 });
 
 function travel() {
@@ -1367,28 +1367,42 @@ function travel() {
   const doors = [];
   const newDoors = [];
   let door = null;
-  for (const tile in tilesWith(door))) {
-    doors.push(getTile(tile.x, tile.y));
+  
+  for (const tile of tilesWith(door)) {
+    doors.push(tile);
   }
-  doors.sort((a, b) => a.x - b.x);
-  let index = doors.findIndex(door => door.x === playerPosition.x);
+
+  // Sorts ascending by y, and by x if y is the same (like reading a book!)
+  doors.sort((a, b) => a.y - b.y || a.x - b.x);
+
+  // Finding the index of the door that matches the player's position
+  let index = doors.findIndex(door => door.x === playerPosition.x && door.y === playerPosition.y);
   let tile = index !== -1 ? doors[index] : null;
+
+  // Early return if no matching door is found or tile is null
+  if (index === -1 || tile === null) {
+    return;
+  }
 
   let originLevel = currentLevel;
   currentLevel = convertToIndex(levels[currentLevel].destinations[index]);
   setMap(levels[currentLevel].map);
   resetFloor();
 
-  
-  if (levels[level].name) {
-    
+  // Otherside checking
+  for (const newTile of tilesWith(door)) {
+    newDoors.push(newTile);
   }
-  
-  
-  // Door not found case
-  if (door === null) {
-    return;
+
+  newDoors.sort((a, b) => a.y - b.y || a.x - b.x);
+
+  for (let i = 0; i < newDoors.length; i++) {
+    if (levels[currentLevel].destinations[i] == levels[originLevel].name) {
+      addSprite(newDoors[i].x, newDoors[i].y, player);
+      return;
+    }
   }
+  addSprite(levels[currentLevel].spawnPos.x, levels[currentLevel].spawnPos.y, player);
 }
 
 // Debugging text display key
