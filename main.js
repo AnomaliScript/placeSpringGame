@@ -632,7 +632,7 @@ function calculatePlatform(allTiles) {
       } else if (sprite.type === glass) {
         platformY = sprite.y;
         glassSpotted(sprite.x, sprite.y);
-        //console.log(`${sprite.x} ${sprite.y}`);
+        console.log(`${sprite.x} ${sprite.y}`);
         console.log("glass spotted!");
         return;
       } else if (sprite.type === block) {
@@ -654,7 +654,7 @@ function calculatePlatform(allTiles) {
   try {
     addSprite(tailTileX, tailTileY, violet);
   } catch(error) {};
-  //console.log(`${tailTileX}, ${tailTileY}`);
+    //console.log(`${tailTileX}, ${tailTileY}`);
   for (const sprite in getTile(tailTileX, tailTileY)) {
     //console.log(`${sprite}`);
   }
@@ -694,18 +694,18 @@ function glassSpotted(x, y, prospective) {
 
     // Rejection note
     if (!reverseGravity) {
-      //console.log(`${adjustedVelocity} is too much negativeness to ${atWhichGlassBreaks}`);
+      console.log(`${adjustedVelocity} is too much negativeness to ${atWhichGlassBreaks}`);
     } else {
-      //console.log(`${adjustedVelocity} is too much positiveness to ${atWhichGlassBreaks}`);
+      console.log(`${adjustedVelocity} is too much positiveness to ${atWhichGlassBreaks}`);
     }
     return;
   }
   
   // Acceptance note
   if (!reverseGravity) {
-    //console.log(`strong enough velocity, ${adjustedVelocity} >= ${atWhichGlassBreaks}`);
+    console.log(`strong enough velocity, ${adjustedVelocity} >= ${atWhichGlassBreaks}`);
   } else {
-    //console.log(`strong enough velocity, ${adjustedVelocity} <= ${atWhichGlassBreaks}`);
+    console.log(`strong enough velocity, ${adjustedVelocity} <= ${atWhichGlassBreaks}`);
   }
   for (const sprite of getTile(x, y)) {
     if (sprite.type === glass) {
@@ -748,7 +748,7 @@ function deathCheck() {
   let spikes = getAll(spike);
   for (let i = 0; i < spikes.length; i++) {
     if (playerPosition.x === spikes[i].x && playerPosition.y === spikes[i].y) {
-      //console.log(`Death: (${playerPosition.x}, ${playerPosition.y}) matches (${spikes[i].x}, ${spikes[i].y})`);
+      console.log(`Death: (${playerPosition.x}, ${playerPosition.y}) matches (${spikes[i].x}, ${spikes[i].y})`);
       death = true;
       return;
     }
@@ -756,7 +756,7 @@ function deathCheck() {
   let spikesFlipped = getAll(spikeFlipped);
   for (let i = 0; i < spikesFlipped.length; i++) {
     if (playerPosition.x === spikesFlipped[i].x && playerPosition.y === spikesFlipped[i].y) {
-      //console.log(`Death: (${playerPosition.x}, ${playerPosition.y}) matches (${spikes[i].x}, ${spikes[i].y})`);
+      console.log(`Death: (${playerPosition.x}, ${playerPosition.y}) matches (${spikes[i].x}, ${spikes[i].y})`);
       death = true;
       return;
     }
@@ -812,7 +812,7 @@ setInterval(() => {
     // WHERE PLAYER MOVEMENT WITH targetY HAPPENS (vertically, ofc)
     calculatePlatform(getSkippedTiles());
     if (platformY != null) {
-      //console.log(`platY = ${platformY}`);
+      console.log(`platY = ${platformY}`);
     }
     
     if (!reverseGravity) {
@@ -1035,7 +1035,6 @@ bbbbbbbbb.bb.i..
     leftSplit: 1,
     right: ["childrensGallery", "leapOfFaith"],
     rightSplit: 6,
-    destinations: ["leapOfFaith"],
     top: null,
     bottom: null,
     map: map`
@@ -1082,7 +1081,6 @@ g..bbb..g..
     left: ["stairs", null],
     leftSplit: 6,
     right: "darkroom",
-    destinations: ["stairs", "childrensGallery"],
     top: null,
     bottom: "creation",
     map: map`
@@ -1136,7 +1134,7 @@ bbbbbb...............bbbbbb
 ..bbbbbbbbbbbbbbbbbbbbbb...
 ..bi.....i.....i.....i.b..b
 ......s.....s.....s........`,
-    spawnPos: {x: 9, y: 7}
+    spawnPos: {x: 9, y: 8}
   },
   {
     name: "restoration",
@@ -1347,19 +1345,16 @@ onInput("d", () => {
   jpb();
 });
 
-// Gravity switching key
 onInput("i", () => {
   velocity = -velocity * 0.5;
   gravitySwitching();
   //jpb();
 });
 
-// Glass breaking key
 onInput("j", () => {
   breakGlass();
 });
 
-// Travelling (through doors) key
 onInput("k", () => {
   travel();
 });
@@ -1369,23 +1364,35 @@ function travel() {
   const doors = [];
   const newDoors = [];
   let door = null;
+  console.log(`current level: ${levels[currentLevel].name}`);
 
-  for (const sprite of getAll(door)) {
-    doors.push(sprite);
-    console.log(`door locations: ${sprite.x}, ${sprite.y}`);
-    console.log("welcome to travel!");
+  for (const tile of tilesWith("d")) {
+    doors.push(tile);
   }
-  
+
+  for (let i = 0; i < doors.length; i++) {
+    console.log(`${doors[i][i].x}, ${doors[i][i].y}`);  // Direct access if tile is an object
+  }
 
   // Sorts ascending by y, and by x if y is the same (like reading a book!)
-  doors.sort((a, b) => a.y - b.y || a.x - b.x);
+  doors.sort((a, b) => a[a].y - b[b].y || a[a].x - b[b].x);
 
   // Finding the index of the door that matches the player's position
-  let index = doors.findIndex(door => door.x === playerPosition.x && door.y === playerPosition.y);
+  for (const door in doors) {
+    
+  }
+  let index = -1; // = doors.findIndex(door => door.x === playerPosition.x && door.y === playerPosition.y);
+  for (let i = 0; i < doors.length; i++) {
+    console.log(`checking if ${doors[i][i].x} === ${playerPosition.x} and if ${doors[i][i].y} === ${playerPosition.y}`);
+    if (doors[i][i].x === playerPosition.x && door.y === playerPosition.y) {
+      index = i;
+    }
+  }
   let tile = index !== -1 ? doors[index] : null;
 
   // Early return if no matching door is found or tile is null
   if (index === -1 || tile === null) {
+    console.log("early return!");
     return;
   }
 
@@ -1410,7 +1417,6 @@ function travel() {
   addSprite(levels[currentLevel].spawnPos.x, levels[currentLevel].spawnPos.y, player);
 }
 
-// Debugging text display key
 onInput("l", () => {
   if (debugMode == 2) {
     debugMode = 0;
