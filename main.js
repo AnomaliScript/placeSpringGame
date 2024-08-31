@@ -1359,25 +1359,36 @@ onInput("j", () => {
 
 // Travelling (through doors) key
 onInput("k", () => {
-  
   travel(x, y);
 });
 
 function travel() {
   const playerPosition = getFirst(player);
-  let x = null;
-  let y = null;
-  for (const sprite in tilesWith(door))) {
-    if (sprite.x === playerPosition.x && sprite.y === playerPosition.y) {
-      x = sprite.x;
-      y = sprite.y;
-    }
+  const doors = [];
+  const newDoors = [];
+  let door = null;
+  for (const tile in tilesWith(door))) {
+    doors.push(getTile(tile.x, tile.y));
   }
-  if (x === null || y === null) {
-    return;
-  }
+  doors.sort((a, b) => a.x - b.x);
+  let index = doors.findIndex(door => door.x === playerPosition.x);
+  let tile = index !== -1 ? doors[index] : null;
+
+  let originLevel = currentLevel;
+  currentLevel = convertToIndex(levels[currentLevel].destinations[index]);
+  setMap(levels[currentLevel].map);
+  resetFloor();
 
   
+  if (levels[level].name) {
+    
+  }
+  
+  
+  // Door not found case
+  if (door === null) {
+    return;
+  }
 }
 
 // Debugging text display key
