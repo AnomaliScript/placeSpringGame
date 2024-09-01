@@ -1361,17 +1361,15 @@ onInput("k", () => {
 
 function travel() {
   const playerPosition = getFirst(player);
-  const doors = [];
+  const doors = tilesWith(door);
   const newDoors = [];
-  let door = null;
   console.log(`current level: ${levels[currentLevel].name}`);
 
-  for (const tile of tilesWith("d")) {
-    doors.push(tile);
-  }
+
+  console.log(doors.length);
 
   for (let i = 0; i < doors.length; i++) {
-    console.log(`${doors[i][i].x}, ${doors[i][i].y}`);  // Direct access if tile is an object
+    console.log(`${doors[i].x}, ${doors[i].y}`);  // Direct access if tile is an object
   }
 
   // Sorts ascending by y, and by x if y is the same (like reading a book!)
@@ -1384,7 +1382,7 @@ function travel() {
   let index = -1; // = doors.findIndex(door => door.x === playerPosition.x && door.y === playerPosition.y);
   for (let i = 0; i < doors.length; i++) {
     console.log(`checking if ${doors[i][i].x} === ${playerPosition.x} and if ${doors[i][i].y} === ${playerPosition.y}`);
-    if (doors[i][i].x === playerPosition.x && door.y === playerPosition.y) {
+    if (doors[i][i].x === playerPosition.x && doors[i][i].y === playerPosition.y) {
       index = i;
     }
   }
@@ -1392,6 +1390,7 @@ function travel() {
 
   // Early return if no matching door is found or tile is null
   if (index === -1 || tile === null) {
+    console.log(`unsatisfied requirements: ${index}, ${tile}`);
     console.log("early return!");
     return;
   }
@@ -1402,14 +1401,12 @@ function travel() {
   resetFloor();
 
   // Otherside checking
-  for (const newTile of tilesWith(door)) {
-    newDoors.push(newTile);
-  }
+  newDoors = tilesWith(door);
 
-  newDoors.sort((a, b) => a.y - b.y || a.x - b.x);
+  newDoors.sort((a, b) => a[a].y - b[b].y || a[a].x - b[b].x);
 
   for (let i = 0; i < newDoors.length; i++) {
-    if (levels[currentLevel].destinations[i] == levels[originLevel].name) {
+    if (levels[currentLevel].destinations[i][i] == levels[originLevel].name) {
       addSprite(newDoors[i].x, newDoors[i].y, player);
       return;
     }
