@@ -1106,7 +1106,7 @@ bbbbbb...............bbbbbb
 ...b...................b...
 ...b...................b...
 ..b.....................b..`,
-    spawnPos: {x: 2, y: floor}
+    spawnPos: {x: 1, y: 7}
   },
   {
     name: "creation",
@@ -1385,6 +1385,7 @@ function travel() {
   // Finding the index of the door that matches the player's position
   let index = -1;
   for (let i = 0; i < doors.length; i++) {
+    // Use double indexes if the thing you're scanning is an array of tiles
     //console.log(`checking if ${doors[i][i].x} === ${playerPosition.x} and if ${doors[i][i].y} === ${playerPosition.y}`);
     if (doors[i][i].x === playerPosition.x && doors[i][i].y === playerPosition.y) {
       index = i;
@@ -1401,8 +1402,10 @@ function travel() {
 
   let originLevel = currentLevel;
   //console.log(`original level name: ${levels[originLevel].name}`);
-  // Check if the OTHER LEVEL'S DESTINATIONS includes the ORIGINAL LEVEL (so the destinations 
-  currentLevel = levels.findIndex(level => levels.destinations[index].includes(level.name));
+  
+  //                            any other level's name        the level that we're aiming for
+  currentLevel = levels.findIndex(level => level.name === levels[originLevel].destinations[index]);
+  console.log(`current level: ${currentLevel}`);
   setMap(levels[currentLevel].map);
   resetFloor();
 
