@@ -1040,7 +1040,7 @@ bbbbbbbbb.bb.i..
     rightSplit: 6,
     top: null,
     bottom: null,
-    destinations: [],
+    destinations: ["leapOfFaith"],
     map: map`
 ......b...bbb...
 ...b......g.g...
@@ -1088,7 +1088,7 @@ g..bbb..g..
     right: "darkroom",
     top: null,
     bottom: "creation",
-    destinations: ["stairs"],
+    destinations: [],
     map: map`
 ...........................
 ...........................
@@ -1385,7 +1385,7 @@ function travel() {
   // Finding the index of the door that matches the player's position
   let index = -1;
   for (let i = 0; i < doors.length; i++) {
-    console.log(`checking if ${doors[i][i].x} === ${playerPosition.x} and if ${doors[i][i].y} === ${playerPosition.y}`);
+    //console.log(`checking if ${doors[i][i].x} === ${playerPosition.x} and if ${doors[i][i].y} === ${playerPosition.y}`);
     if (doors[i][i].x === playerPosition.x && doors[i][i].y === playerPosition.y) {
       index = i;
     }
@@ -1394,14 +1394,15 @@ function travel() {
 
   // Early return if no matching door is found or tile is null
   if (index === -1 || tile === null) {
-    console.log(`unsatisfied requirements: ${index}, ${tile}`);
+    //console.log(`unsatisfied requirements: ${index}, ${tile}`);
     console.log("early return!");
     return;
   }
 
   let originLevel = currentLevel;
-  console.log(`original level name: ${levels[originLevel].name}`);
-  currentLevel = levels.findIndex(level => level.destinations[index] === levels[originLevel].name);
+  //console.log(`original level name: ${levels[originLevel].name}`);
+  // Check if the OTHER LEVEL'S DESTINATIONS includes the ORIGINAL LEVEL (so the destinations 
+  currentLevel = levels.findIndex(level => levels.destinations[index].includes(level.name));
   setMap(levels[currentLevel].map);
   resetFloor();
 
@@ -1412,7 +1413,7 @@ function travel() {
 
   for (let i = 0; i < newDoors.length; i++) {
     if (levels[currentLevel].destinations[i] == levels[originLevel].name) {
-      addSprite(newDoors[i].x, newDoors[i].y, player);
+      addSprite(newDoors[i][i].x, newDoors[i][i].y, player);
       return;
     }
   }
