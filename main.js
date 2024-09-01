@@ -960,6 +960,7 @@ const levels = [{
     rightSplit: 10,
     top: null,
     bottom: null,
+    destinations: [],
     map: map`
 .................
 .......bb........
@@ -985,6 +986,7 @@ gg...............
     right: "origin",
     top: null,
     bottom: "caveEntrance",
+    destinations: [],
     map: map`
 ................
 ................
@@ -1010,6 +1012,7 @@ bb..........bb..
     right: null,//"caveChamber"
     top: "plains",
     bottom: null,//"dungeon"
+    destinations: [],
     map: map`
 bbb..bbbbbbbbbbb
 .....bd.........
@@ -1037,6 +1040,7 @@ bbbbbbbbb.bb.i..
     rightSplit: 6,
     top: null,
     bottom: null,
+    destinations: [],
     map: map`
 ......b...bbb...
 ...b......g.g...
@@ -1060,6 +1064,7 @@ b.........gdg...
     right: "exhibit",
     top: null,
     bottom: null,
+    destinations: [],
     map: map`
 iiiiiiiiiii
 ..ggggg....
@@ -1083,6 +1088,7 @@ g..bbb..g..
     right: "darkroom",
     top: null,
     bottom: "creation",
+    destinations: ["stairs"],
     map: map`
 ...........................
 ...........................
@@ -1109,6 +1115,7 @@ bbbbbb...............bbbbbb
     rightSplit: 6,
     top: "leapOfFaith",
     bottom: null,
+    destinations: [],
     map: map`
 ..b....................b...
 ..b....................b...
@@ -1143,6 +1150,7 @@ bbbbbb...............bbbbbb
     right: null,
     top: "origin",
     bottom: null,
+    destinations: [],
     map: map`
 .................
 .......bb........
@@ -1362,10 +1370,9 @@ onInput("k", () => {
 function travel() {
   const playerPosition = getFirst(player);
   const doors = tilesWith(door);
-  const newDoors = [];
   console.log(`current level: ${levels[currentLevel].name}`);
 
-
+  // How much doors?
   console.log(doors.length);
 
   for (let i = 0; i < doors.length; i++) {
@@ -1376,9 +1383,6 @@ function travel() {
   doors.sort((a, b) => a[a].y - b[b].y || a[a].x - b[b].x);
 
   // Finding the index of the door that matches the player's position
-  for (const door in doors) {
-    
-  }
   let index = -1;
   for (let i = 0; i < doors.length; i++) {
     console.log(`checking if ${doors[i][i].x} === ${playerPosition.x} and if ${doors[i][i].y} === ${playerPosition.y}`);
@@ -1402,7 +1406,7 @@ function travel() {
   resetFloor();
 
   // Otherside checking
-  newDoors = tilesWith(door);
+  const newDoors = tilesWith(door);
 
   newDoors.sort((a, b) => a[a].y - b[b].y || a[a].x - b[b].x);
 
