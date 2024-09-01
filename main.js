@@ -1166,7 +1166,7 @@ gg.gg.gg.gg......
 
 // I'm using a levelName to levelIndex converter because I want to use level names :)
 // This is the actual converter
-function convertToIndex(name) {
+function convertNameToIndex(name) {
   return levels.findIndex(level => level.name === name);
 }
 
@@ -1182,7 +1182,7 @@ function drawLevel(direction) {
   console.log(`Saved coords: ${saveX}, ${saveY}  Direction: ${direction}`);
   if (direction === "left") { ////////////////////Left case///////////////////////
     if (!Array.isArray(levels[currentLevel].left)) { // Linear/straightforward case
-      currentLevel = convertToIndex(levels[currentLevel].left);
+      currentLevel = convertNameToIndex(levels[currentLevel].left);
       setMap(levels[currentLevel].map);
       // unnecessary but just in case
       resetFloor();
@@ -1198,21 +1198,21 @@ function drawLevel(direction) {
         return;
       }
       const originalHeight = (split + 1);
-      currentLevel = convertToIndex(levels[currentLevel].left[0]);
+      currentLevel = convertNameToIndex(levels[currentLevel].left[0]);
       setMap(levels[currentLevel].map);
       saveY += (height() - originalHeight);
     } else {
       if (levels[currentLevel].left[1] === null) {
         return;
       }
-      currentLevel = convertToIndex(levels[currentLevel].left[1]);
+      currentLevel = convertNameToIndex(levels[currentLevel].left[1]);
       setMap(levels[currentLevel].map);
       saveY -= split + 1;
     }
     resetFloor();
     // Safety Case
     if (saveY < 0 || saveY > floor) {
-      currentLevel = convertToIndex(levels[originalLevel]);
+      currentLevel = convertNameToIndex(levels[originalLevel]);
       setMap(levels[currentLevel].map);
       resetFloor();
       addSprite(0, originalSaveY, player);
@@ -1231,7 +1231,7 @@ function drawLevel(direction) {
     addSprite(width() - 1, saveY, player);
   } else if (direction === "right") { /////////////////////////Right case//////////////////////////
     if (!Array.isArray(levels[currentLevel].right)) { // Linear/straightforward case
-      currentLevel = convertToIndex(levels[currentLevel].right);
+      currentLevel = convertNameToIndex(levels[currentLevel].right);
       setMap(levels[currentLevel].map);
       // unnecessary but just in case
       resetFloor();
@@ -1247,21 +1247,21 @@ function drawLevel(direction) {
         return;
       }
       const originalHeight = (split + 1);
-      currentLevel = convertToIndex(levels[currentLevel].right[0]);
+      currentLevel = convertNameToIndex(levels[currentLevel].right[0]);
       setMap(levels[currentLevel].map);
       saveY += (height() - originalHeight);
     } else {
       if (levels[currentLevel].right[1] === null) {
         return;
       }
-      currentLevel = convertToIndex(levels[currentLevel].right[1]);
+      currentLevel = convertNameToIndex(levels[currentLevel].right[1]);
       setMap(levels[currentLevel].map);
       saveY -= (split + 1);
     }
     resetFloor();
     // Safety Case
     if (saveY < 0 || saveY > floor) {
-      currentLevel = convertToIndex(levels[originalLevel]);
+      currentLevel = convertNameToIndex(levels[originalLevel]);
       setMap(levels[currentLevel].map);
       resetFloor();
       addSprite(0, originalSaveY, player);
@@ -1279,12 +1279,12 @@ function drawLevel(direction) {
     }
     addSprite(0, saveY, player);
   } else if (direction === "top") {
-    currentLevel = convertToIndex(levels[currentLevel].top);
+    currentLevel = convertNameToIndex(levels[currentLevel].top);
     setMap(levels[currentLevel].map);
     resetFloor();
     addSprite(saveX, floor, player);
   } else if (direction === "bottom") {
-    currentLevel = convertToIndex(levels[currentLevel].bottom);
+    currentLevel = convertNameToIndex(levels[currentLevel].bottom);
     setMap(levels[currentLevel].map);
     resetFloor();
     addSprite(saveX, 0, player);
@@ -1379,7 +1379,7 @@ function travel() {
   for (const door in doors) {
     
   }
-  let index = -1; // = doors.findIndex(door => door.x === playerPosition.x && door.y === playerPosition.y);
+  let index = -1;
   for (let i = 0; i < doors.length; i++) {
     console.log(`checking if ${doors[i][i].x} === ${playerPosition.x} and if ${doors[i][i].y} === ${playerPosition.y}`);
     if (doors[i][i].x === playerPosition.x && doors[i][i].y === playerPosition.y) {
@@ -1396,7 +1396,8 @@ function travel() {
   }
 
   let originLevel = currentLevel;
-  currentLevel = convertToIndex(levels[currentLevel].destinations[index]);
+  console.log(`original level name: ${levels[originLevel].name}`);
+  currentLevel = levels.findIndex(level => level.destinations[index] === levels[originLevel].name);
   setMap(levels[currentLevel].map);
   resetFloor();
 
@@ -1406,7 +1407,7 @@ function travel() {
   newDoors.sort((a, b) => a[a].y - b[b].y || a[a].x - b[b].x);
 
   for (let i = 0; i < newDoors.length; i++) {
-    if (levels[currentLevel].destinations[i][i] == levels[originLevel].name) {
+    if (levels[currentLevel].destinations[i] == levels[originLevel].name) {
       addSprite(newDoors[i].x, newDoors[i].y, player);
       return;
     }
