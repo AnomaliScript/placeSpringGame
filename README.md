@@ -11,6 +11,9 @@ Notable metroidvanias include (but not limited to): Hollow Knight, Ori BF and Or
 A lot of comments are still in the code, that's how you know I've been debugging a whole ton 😅
 (NOTE TO HACK CLUB: PLEASE MAKE A DEBUG MODE IN SPRIG LIKE THEY HAVE IN VS CODE PLEASEEE)
 
+!Sprig Game Interface(img_3582_720.png)
+placeV1 - gameplay-trailer.mp4
+
 ## Basic controls
 w: jump
 a: move left
