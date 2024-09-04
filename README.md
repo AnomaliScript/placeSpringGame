@@ -11,6 +11,9 @@ Notable metroidvanias include (but not limited to): Hollow Knight, Ori BF and Or
 A lot of comments are still in the code, that's how you know I've been debugging a whole ton 😅
 (NOTE TO HACK CLUB: PLEASE MAKE A DEBUG MODE IN SPRIG LIKE THEY HAVE IN VS CODE PLEASEEE)
 
+## Can I play it?
+Ofc! Here's the share link to my game: https://sprig.hackclub.com/share/g1kmuDE2G1LJwEFILha7
+
 ![img_3582_720](https://github.com/user-attachments/assets/ca5e8942-ea8f-4cc1-87d0-db5195082f87)
 
 Video of me playtesting the game (still got a ways to go): https://github.com/user-attachments/assets/4003aaf2-8745-47d9-ac26-ab3586f79484
